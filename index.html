@@ -1720,11 +1720,31 @@
     }
   }
 
-  // Cada bipe já lança 1 unidade na hora, sem precisar tocar em mais nada —
-  // pra lançar várias unidades do mesmo item, é só bipar de novo. O cooldown
-  // evita que o mesmo código, ainda parado na frente da câmera, seja lançado
-  // várias vezes seguidas antes do operador afastar pro próximo item.
-  var SCANNER_COOLDOWN_MS = 1500;
+  // Beep curto de confirmação (gerado na hora via Web Audio, sem precisar de
+  // nenhum arquivo de áudio) — toca quando um item é identificado e lançado.
+  function playScanBeep(){
+    try{
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if(!AudioCtx){ return; }
+      var ctx = new AudioCtx();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 1200;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+      osc.onended = function(){ ctx.close(); };
+    }catch(e){}
+  }
+
+  // Código não encontrado: mostra o erro e deixa a câmera ligada, com um
+  // pequeno cooldown pra não repetir o mesmo aviso várias vezes seguidas
+  // enquanto o código ainda estiver parado na frente da câmera.
+  var SCANNER_NOT_FOUND_COOLDOWN_MS = 1500;
   var scannerCooldownUntil = 0;
 
   function onScanDecoded(decodedText){
@@ -1740,20 +1760,27 @@
     var key = code.toUpperCase();
 
     if(!hasCode(key)){
-      scannerCooldownUntil = now + SCANNER_COOLDOWN_MS;
+      scannerCooldownUntil = now + SCANNER_NOT_FOUND_COOLDOWN_MS;
       showToast("Código lido (" + decodedText + ") não encontrado na lista de itens.", "error");
       el.scannerStatus.textContent = "Não encontrado: " + decodedText;
-      setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_COOLDOWN_MS);
+      setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_NOT_FOUND_COOLDOWN_MS);
       return;
     }
 
-    scannerCooldownUntil = now + SCANNER_COOLDOWN_MS;
+    var triggerRow = scannerTargetRow;
     var desc = catalog.items[key];
     commitNewEntries([{ code: key, desc: desc || "" }]);
     refreshAndRender();
+    playScanBeep();
     showToast("Lançado: " + key + " (1 unidade).");
-    el.scannerStatus.textContent = "✓ " + key + " lançado — próximo item";
-    setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_COOLDOWN_MS);
+    // Volta pra tela de lançamento — pra escanear o próximo item, o
+    // operador precisa adicionar uma linha nova e tocar no scanner de novo
+    // (a linha que disparou esse bipe é removida, não fica pronta pra reusar).
+    closeScanner();
+    if(triggerRow && triggerRow.parentNode){
+      triggerRow.remove();
+      updateBatchButton();
+    }
   }
 
   el.scannerClose.addEventListener("click", closeScanner);
