@@ -846,7 +846,15 @@
     return fetch(url, opts).finally(function(){ if(timer){ clearTimeout(timer); } });
   }
 
+  // Enquanto uma chamada de criação de um item ainda está em andamento, uma
+  // segunda chamada pro MESMO item (ex: o retry automático rodando antes da
+  // primeira tentativa terminar) criaria um registro DUPLICADO no SharePoint.
+  // Esse mapa evita que o mesmo entry.id seja enviado duas vezes ao mesmo tempo.
+  var inFlightCreateIds = {};
+
   function syncOneEntryToSharePoint(entry){
+    if(inFlightCreateIds[entry.id]){ return Promise.resolve(false); }
+    inFlightCreateIds[entry.id] = true;
     var payload = {
       acao: "criar",
       sku: entry.code,
@@ -874,7 +882,8 @@
         return true;
       }
       return false;
-    }).catch(function(){ return false; });
+    }).catch(function(){ return false; })
+      .finally(function(){ delete inFlightCreateIds[entry.id]; });
   }
 
   function syncEntriesToSharePoint(entries){
