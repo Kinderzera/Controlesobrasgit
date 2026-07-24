@@ -1721,8 +1721,8 @@
   }
 
   // Beep curto de confirmação (gerado na hora via Web Audio, sem precisar de
-  // nenhum arquivo de áudio) — imita o bipe agudo e seco de coletor de
-  // estoque (WMS): onda quadrada, bem curta e com ataque instantâneo.
+  // nenhum arquivo de áudio) — imita o bipe clássico de leitor de código de
+  // barras de caixa de mercado: tom limpo (senoidal), agudo e bem curto.
   function playScanBeep(){
     try{
       var AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1730,15 +1730,15 @@
       var ctx = new AudioCtx();
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.value = 2800;
+      osc.type = "sine";
+      osc.frequency.value = 2900;
       gain.gain.setValueAtTime(1, ctx.currentTime);
-      gain.gain.setValueAtTime(1, ctx.currentTime + 0.13);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+      gain.gain.setValueAtTime(1, ctx.currentTime + 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.11);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.16);
+      osc.stop(ctx.currentTime + 0.11);
       osc.onended = function(){ ctx.close(); };
     }catch(e){}
   }
