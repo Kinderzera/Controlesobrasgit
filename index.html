@@ -1732,13 +1732,13 @@
       var gain = ctx.createGain();
       osc.type = "square";
       osc.frequency.value = 2800;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.setValueAtTime(1, ctx.currentTime + 0.13);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.1);
+      osc.stop(ctx.currentTime + 0.16);
       osc.onended = function(){ ctx.close(); };
     }catch(e){}
   }
