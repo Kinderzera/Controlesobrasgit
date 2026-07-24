@@ -537,7 +537,7 @@
       <div id="view-lancar" class="tab-view active">
         <div class="card" id="card-registrar">
           <h2>Registrar sobras</h2>
-          <p class="card-caption">Cole várias linhas de uma vez (código e quantidade) ou adicione item por item.</p>
+          <p class="card-caption">Escaneie o código de barras — cada leitura lança 1 unidade na hora. Pra mais de uma unidade, escaneie de novo. Também dá pra colar ou digitar os códigos manualmente (1 por linha).</p>
           <form id="batch-form" novalidate>
             <div class="batch-list" id="batch-list"></div>
 
@@ -1720,23 +1720,40 @@
     }
   }
 
+  // Cada bipe já lança 1 unidade na hora, sem precisar tocar em mais nada —
+  // pra lançar várias unidades do mesmo item, é só bipar de novo. O cooldown
+  // evita que o mesmo código, ainda parado na frente da câmera, seja lançado
+  // várias vezes seguidas antes do operador afastar pro próximo item.
+  var SCANNER_COOLDOWN_MS = 1500;
+  var scannerCooldownUntil = 0;
+
   function onScanDecoded(decodedText){
-    var row = scannerTargetRow;
-    if(!row){ return; }
-    var code = resolveScannedCode(decodedText);
-    closeScanner();
+    var now = Date.now();
+    if(now < scannerCooldownUntil){ return; }
 
-    var codeInput = row.querySelector(".batch-code");
-    codeInput.value = code;
-    updateRowValidation(row);
-
-    if(hasCode(code.toUpperCase())){
-      showToast("Escaneado: " + code.toUpperCase() + ".");
-      row.querySelector(".batch-qty").focus();
-      row.querySelector(".batch-qty").select();
-    } else {
-      showToast("Código lido (" + decodedText + ") não encontrado na lista de itens.", "error");
+    if(catalog.count === 0){
+      showToast("Importe a lista de itens antes de lançar.", "error");
+      return;
     }
+
+    var code = resolveScannedCode(decodedText);
+    var key = code.toUpperCase();
+
+    if(!hasCode(key)){
+      scannerCooldownUntil = now + SCANNER_COOLDOWN_MS;
+      showToast("Código lido (" + decodedText + ") não encontrado na lista de itens.", "error");
+      el.scannerStatus.textContent = "Não encontrado: " + decodedText;
+      setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_COOLDOWN_MS);
+      return;
+    }
+
+    scannerCooldownUntil = now + SCANNER_COOLDOWN_MS;
+    var desc = catalog.items[key];
+    commitNewEntries([{ code: key, desc: desc || "" }]);
+    refreshAndRender();
+    showToast("Lançado: " + key + " (1 unidade).");
+    el.scannerStatus.textContent = "✓ " + key + " lançado — próximo item";
+    setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_COOLDOWN_MS);
   }
 
   el.scannerClose.addEventListener("click", closeScanner);
@@ -1757,11 +1774,6 @@
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M14 8v8M17 8v8"></path></svg>' +
           '</button>' +
         '</div>' +
-        '<div class="qty-control">' +
-          '<button type="button" class="qb-minus" aria-label="Diminuir">−</button>' +
-          '<input type="number" class="batch-qty" inputmode="numeric" min="1" step="1" placeholder="1">' +
-          '<button type="button" class="qb-plus" aria-label="Aumentar">+</button>' +
-        '</div>' +
         '<button type="button" class="batch-remove" aria-label="Remover linha">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' +
         '</button>' +
@@ -1769,21 +1781,11 @@
       '<div class="batch-hint"></div>';
 
     var codeInput = row.querySelector(".batch-code");
-    var qtyInput = row.querySelector(".batch-qty");
 
     codeInput.addEventListener("input", function(){ updateRowValidation(row); });
     codeInput.addEventListener("paste", function(ev){ handleCodePaste(ev, row); });
     codeInput.addEventListener("keydown", function(ev){
-      if(ev.key === "Enter"){ ev.preventDefault(); qtyInput.focus(); qtyInput.select(); }
-    });
-    qtyInput.addEventListener("keydown", function(ev){
       if(ev.key === "Enter"){ ev.preventDefault(); focusNextOrNewRow(row); }
-    });
-    row.querySelector(".qb-minus").addEventListener("click", function(){
-      var v = parseInt(qtyInput.value, 10); v = (isNaN(v) || v < 2) ? 1 : v - 1; qtyInput.value = v;
-    });
-    row.querySelector(".qb-plus").addEventListener("click", function(){
-      var v = parseInt(qtyInput.value, 10); v = (isNaN(v) || v < 1) ? 1 : v + 1; qtyInput.value = v;
     });
     row.querySelector(".batch-remove").addEventListener("click", function(){ removeRow(row); });
     row.querySelector(".batch-scan-btn").addEventListener("click", function(){ openScanner(row); });
@@ -1844,7 +1846,6 @@
     var rows = el.batchList.querySelectorAll(".batch-row");
     if(rows.length <= 1){
       row.querySelector(".batch-code").value = "";
-      row.querySelector(".batch-qty").value = "";
       updateRowValidation(row);
       return;
     }
@@ -1870,10 +1871,7 @@
 
   function splitPastedLine(line){
     var parts = line.split(/\t|;|,/);
-    var code = (parts[0] || "").trim();
-    var qtyRaw = parts.length > 1 ? parseInt(parts[1], 10) : NaN;
-    var qty = (!isNaN(qtyRaw) && qtyRaw > 0) ? qtyRaw : 1;
-    return { code: code, qty: qty };
+    return (parts[0] || "").trim();
   }
 
   function handleCodePaste(ev, row){
@@ -1885,19 +1883,16 @@
 
     ev.preventDefault();
 
-    var first = splitPastedLine(lines[0]);
-    row.querySelector(".batch-code").value = first.code;
-    row.querySelector(".batch-qty").value = first.qty;
+    row.querySelector(".batch-code").value = splitPastedLine(lines[0]);
     updateRowValidation(row);
 
     var afterRow = row;
     for(var i=1;i<lines.length;i++){
-      var parsed = splitPastedLine(lines[i]);
-      if(!parsed.code) continue;
+      var code = splitPastedLine(lines[i]);
+      if(!code) continue;
       var newRow = createRow();
       afterRow.insertAdjacentElement("afterend", newRow);
-      newRow.querySelector(".batch-code").value = parsed.code;
-      newRow.querySelector(".batch-qty").value = parsed.qty;
+      newRow.querySelector(".batch-code").value = code;
       updateRowValidation(newRow);
       afterRow = newRow;
     }
@@ -1911,6 +1906,33 @@
     el.btnBatchSubmit.disabled = validCount === 0;
     el.btnBatchSubmit.innerHTML = (validCount > 0 ? ("LANÇAR " + validCount + (validCount === 1 ? " ITEM" : " ITENS")) : "LANÇAR ITENS") +
       ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  }
+
+  // Compartilhado entre o envio manual do formulário e o scanner: cada item
+  // sempre entra como 1 unidade — pra registrar mais, é 1 chamada por unidade
+  // (uma linha extra no formulário, ou um bipe extra no scanner).
+  function commitNewEntries(items){
+    var all = loadEntries();
+    var now = new Date().toISOString();
+    var newEntries = [];
+    items.forEach(function(item){
+      var entry = {
+        id: Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        unit: session.unit,
+        unitLabel: session.unitLabel,
+        user: session.displayName,
+        code: item.code,
+        desc: item.desc,
+        qty: 1,
+        ts: now
+      };
+      all.push(entry);
+      newEntries.push(entry);
+    });
+    saveEntries(all);
+    syncEntriesToSharePoint(newEntries);
+    newEntries.forEach(function(entry){ logAudit("criado", entry, entry.user); });
+    return newEntries;
   }
 
   el.btnAddRow.addEventListener("click", function(){ addRow(true); });
@@ -1929,13 +1951,10 @@
 
     rows.forEach(function(row){
       var codeInput = row.querySelector(".batch-code");
-      var qtyInput = row.querySelector(".batch-qty");
       var raw = codeInput.value.trim();
       if(!raw) return;
       if(row.dataset.valid !== "1"){ skippedInvalid++; return; }
-      var qty = parseInt(qtyInput.value, 10);
-      if(!qty || qty < 1){ qty = 1; }
-      toCommit.push({ code: raw.toUpperCase(), qty: qty, desc: row.dataset.desc || "" });
+      toCommit.push({ code: raw.toUpperCase(), desc: row.dataset.desc || "" });
       committedRows.push(row);
     });
 
@@ -1944,26 +1963,7 @@
       return;
     }
 
-    var all = loadEntries();
-    var now = new Date().toISOString();
-    var newEntries = [];
-    toCommit.forEach(function(item){
-      var entry = {
-        id: Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-        unit: session.unit,
-        unitLabel: session.unitLabel,
-        user: session.displayName,
-        code: item.code,
-        desc: item.desc,
-        qty: item.qty,
-        ts: now
-      };
-      all.push(entry);
-      newEntries.push(entry);
-    });
-    saveEntries(all);
-    syncEntriesToSharePoint(newEntries);
-    newEntries.forEach(function(entry){ logAudit("criado", entry, entry.user); });
+    commitNewEntries(toCommit);
 
     committedRows.forEach(function(row){ row.remove(); });
     var remaining = el.batchList.querySelectorAll(".batch-row");
@@ -2156,7 +2156,7 @@
 
   var TOUR_STEPS = [
     { tab:null, target:null, icon:ICON_BOX, title:"Bem-vindo(a)!", text:"Esse app registra as sobras (itens sem nota fiscal) recebidas das transportadoras. Vamos mostrar rapidinho as partes principais." },
-    { tab:"lancar", target:"#batch-list", icon:ICON_PLUS, title:"Registrar sobras", text:"Digite o código do produto — a descrição aparece sozinha — e a quantidade. Dá pra colar várias linhas de uma vez, copiadas do Excel. Depois toque em \"Lançar itens\"." },
+    { tab:"lancar", target:"#batch-list", icon:ICON_PLUS, title:"Registrar sobras", text:"Escaneie o código de barras: cada leitura já lança 1 unidade na hora, sem precisar tocar em mais nada. Pra várias unidades do mesmo item, é só escanear de novo." },
     { tab:"lancar", target:"#card-lancamentos .list-head", icon:ICON_LIST, title:"Lançamentos", text:"Logo abaixo aparecem os itens já lançados. Errou algo? Toque no ícone da lixeira pra remover." },
     { tab:"historico", target:"#view-historico .list-head", icon:ICON_CLOCK, title:"Histórico", text:"Essa aba mostra tudo que foi criado ou removido, com o nome de quem fez e a data — pra ter controle de tudo." },
     { tab:"painel", target:".panel-summary", icon:ICON_CHART, title:"Painel", text:"Mostra a quantidade e o valor total das sobras, um gráfico de recebimentos por mês, e botões pra exportar tudo em Excel." },
