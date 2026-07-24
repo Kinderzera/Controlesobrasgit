@@ -681,7 +681,7 @@
 
 <div id="scanner-overlay">
   <div class="scanner-top">
-    <span id="scanner-status">Aponte a câmera para o código de barras</span>
+    <span id="scanner-status">Aponte a câmera para o código de barras (toque na tela pra focar)</span>
     <div class="scanner-top-actions">
       <button type="button" id="scanner-torch" class="scanner-btn" aria-label="Ligar lanterna" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M9 18h6M10 22h4M15 2H9l-1 8h2l-1 8 8-10h-4l2-6z"></path></svg>
@@ -1673,7 +1673,7 @@
 
   function openScanner(row){
     scannerTargetRow = row;
-    el.scannerStatus.textContent = "Aponte a câmera para o código de barras";
+    el.scannerStatus.textContent = "Aponte a câmera para o código de barras (toque na tela pra focar)";
     resetTorchButton();
     el.scannerOverlay.classList.add("show");
 
@@ -1698,8 +1698,13 @@
         });
       }
       return scannerLib.start(
-        { facingMode: "environment" },
-        { fps: 20, qrbox: { width: 300, height: 140 }, disableFlip: true },
+        // focusMode "continuous" é o que mais pesa na velocidade real de
+        // leitura — sem isso, muitos aparelhos deixam a câmera com foco fixo
+        // e o código de barras fica desfocado de perto, travando a leitura.
+        // "advanced" é best-effort: se o aparelho não suportar, é ignorado
+        // pelo próprio navegador em vez de dar erro.
+        { facingMode: "environment", advanced: [{ focusMode: "continuous" }] },
+        { fps: 25, qrbox: { width: 300, height: 140 }, disableFlip: true },
         onScanDecoded,
         function(){ /* ignora falhas de leitura por frame — é normal até achar o código */ }
       );
@@ -1710,6 +1715,14 @@
       showToast("Não foi possível acessar a câmera para escanear.", "error");
     });
   }
+
+  // Toca na imagem da câmera pra forçar o aparelho a refocar na hora — util
+  // quando o código de barras está borrado por estar muito perto/longe.
+  function tapToRefocus(){
+    if(!scannerLib){ return; }
+    scannerLib.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function(){});
+  }
+  el.scannerReader.addEventListener("click", tapToRefocus);
 
   function closeScanner(){
     el.scannerOverlay.classList.remove("show");
@@ -1765,7 +1778,7 @@
       scannerCooldownUntil = now + SCANNER_NOT_FOUND_COOLDOWN_MS;
       showToast("Código lido (" + decodedText + ") não encontrado na lista de itens.", "error");
       el.scannerStatus.textContent = "Não encontrado: " + decodedText;
-      setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras"; }, SCANNER_NOT_FOUND_COOLDOWN_MS);
+      setTimeout(function(){ el.scannerStatus.textContent = "Aponte a câmera para o código de barras (toque na tela pra focar)"; }, SCANNER_NOT_FOUND_COOLDOWN_MS);
       return;
     }
 
