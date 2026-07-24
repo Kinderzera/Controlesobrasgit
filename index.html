@@ -1737,11 +1737,28 @@
   // Beep curto de confirmação (gerado na hora via Web Audio, sem precisar de
   // nenhum arquivo de áudio) — imita o bipe clássico de leitor de código de
   // barras de caixa de mercado: tom limpo (senoidal), agudo e bem curto.
-  function playScanBeep(){
+  //
+  // Um AudioContext novo a cada bipe nasce "suspenso" no Chrome/Android por
+  // política de autoplay (só toca se criado/retomado dentro de um toque do
+  // usuário) — o Safari do iPhone é mais tolerante, por isso só funcionava
+  // lá. Reaproveita UM contexto só, destravado logo no toque do botão de
+  // escanear (gesto real do usuário), e não fecha ele entre um bipe e outro.
+  var scanBeepCtx = null;
+
+  function ensureBeepContext(){
     try{
       var AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if(!AudioCtx){ return; }
-      var ctx = new AudioCtx();
+      if(!AudioCtx){ return null; }
+      if(!scanBeepCtx){ scanBeepCtx = new AudioCtx(); }
+      if(scanBeepCtx.state === "suspended"){ scanBeepCtx.resume().catch(function(){}); }
+      return scanBeepCtx;
+    }catch(e){ return null; }
+  }
+
+  function playScanBeep(){
+    try{
+      var ctx = ensureBeepContext();
+      if(!ctx){ return; }
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = "sine";
@@ -1753,7 +1770,6 @@
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.11);
-      osc.onended = function(){ ctx.close(); };
     }catch(e){}
   }
 
@@ -1831,7 +1847,7 @@
       if(ev.key === "Enter"){ ev.preventDefault(); focusNextOrNewRow(row); }
     });
     row.querySelector(".batch-remove").addEventListener("click", function(){ removeRow(row); });
-    row.querySelector(".batch-scan-btn").addEventListener("click", function(){ openScanner(row); });
+    row.querySelector(".batch-scan-btn").addEventListener("click", function(){ ensureBeepContext(); openScanner(row); });
 
     return row;
   }
