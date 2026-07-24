@@ -1721,7 +1721,8 @@
   }
 
   // Beep curto de confirmação (gerado na hora via Web Audio, sem precisar de
-  // nenhum arquivo de áudio) — toca quando um item é identificado e lançado.
+  // nenhum arquivo de áudio) — imita o bipe agudo e seco de coletor de
+  // estoque (WMS): onda quadrada, bem curta e com ataque instantâneo.
   function playScanBeep(){
     try{
       var AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1729,14 +1730,15 @@
       var ctx = new AudioCtx();
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 1200;
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.type = "square";
+      osc.frequency.value = 2800;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + 0.1);
       osc.onended = function(){ ctx.close(); };
     }catch(e){}
   }
