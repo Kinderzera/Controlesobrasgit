@@ -1698,18 +1698,19 @@
         });
       }
       return scannerLib.start(
-        // focusMode "continuous" é o que mais pesa na velocidade real de
-        // leitura — sem isso, muitos aparelhos deixam a câmera com foco fixo
-        // e o código de barras fica desfocado de perto, travando a leitura.
-        // "advanced" é best-effort: se o aparelho não suportar, é ignorado
-        // pelo próprio navegador em vez de dar erro.
-        { facingMode: "environment", advanced: [{ focusMode: "continuous" }] },
+        { facingMode: "environment" },
         { fps: 25, qrbox: { width: 300, height: 140 }, disableFlip: true },
         onScanDecoded,
         function(){ /* ignora falhas de leitura por frame — é normal até achar o código */ }
       );
     }).then(function(){
       updateTorchAvailability();
+      // Tenta ligar foco contínuo só DEPOIS que a câmera já abriu — pedir
+      // isso já na negociação inicial (getUserMedia) derrubava a abertura da
+      // câmera inteira em alguns Android, que tratam "advanced" não suportado
+      // como erro fatal em vez de ignorar. Aplicado depois, falha em
+      // silêncio sem afetar o resto.
+      scannerLib.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function(){});
     }).catch(function(){
       closeScanner();
       showToast("Não foi possível acessar a câmera para escanear.", "error");
