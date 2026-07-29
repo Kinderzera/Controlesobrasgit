@@ -50,6 +50,7 @@ export default async function handler(req, res) {
       loadEnvUsers().forEach((u) => {
         users.push({
           username: u.username || "",
+          password: u.password || "",
           unit: u.unit || "",
           unitLabel: u.unitLabel || "",
           displayName: u.displayName || "",
@@ -69,6 +70,7 @@ export default async function handler(req, res) {
         }
         users.push({
           username: raw[i],
+          password: val.password || "",
           unit: val.unit || "",
           unitLabel: val.unitLabel || "",
           displayName: val.displayName || "",
@@ -107,6 +109,41 @@ export default async function handler(req, res) {
         username,
         JSON.stringify({ password, unit, unitLabel, displayName }),
       ]);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "changePassword") {
+      const alvo = String((req.body && req.body.username) || "")
+        .trim()
+        .toLowerCase();
+      const newPassword = String((req.body && req.body.password) || "");
+
+      if (!alvo || !newPassword) {
+        res.status(400).json({ ok: false, error: "Preencha usuário e senha" });
+        return;
+      }
+      if (loadEnvUsers().some((u) => u.username === alvo)) {
+        res.status(400).json({
+          ok: false,
+          error: "Esse usuário é fixo (variável de ambiente) e não pode ser editado por aqui",
+        });
+        return;
+      }
+
+      const raw = await redisCmd(["HGET", USERS_KEY, alvo]);
+      if (!raw) {
+        res.status(404).json({ ok: false, error: "Usuário não encontrado" });
+        return;
+      }
+      let val = {};
+      try {
+        val = JSON.parse(raw);
+      } catch (e) {
+        val = {};
+      }
+      val.password = newPassword;
+      await redisCmd(["HSET", USERS_KEY, alvo, JSON.stringify(val)]);
       res.status(200).json({ ok: true });
       return;
     }
