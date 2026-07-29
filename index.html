@@ -559,7 +559,7 @@
       <div id="view-lancar" class="tab-view active">
         <div class="card" id="card-registrar">
           <h2>Registrar sobras</h2>
-          <p class="card-caption">Escaneie o código de barras — cada leitura lança 1 unidade na hora. Pra mais de uma unidade, escaneie de novo. Também dá pra colar ou digitar os códigos manualmente (1 por linha).</p>
+          <p class="card-caption">Escaneie o código de barras. Cada leitura lança 1 unidade na hora. Pra mais de uma unidade, escaneie de novo. Também dá pra colar ou digitar os códigos manualmente (1 por linha).</p>
           <form id="batch-form" novalidate>
             <div class="batch-list" id="batch-list"></div>
 
@@ -1242,7 +1242,7 @@
       el.syncStatus.classList.add("syncing");
       el.btnRefresh.classList.add("spinning");
     } else if(state === "error"){
-      el.syncStatus.textContent = "Não sincronizou agora — mostrando dados salvos.";
+      el.syncStatus.textContent = "Não sincronizou agora, mostrando dados salvos.";
       el.syncStatus.classList.add("error");
       el.btnRefresh.classList.remove("spinning");
     } else {
@@ -2294,7 +2294,7 @@
     });
 
     if(toCommit.length === 0){
-      showToast(skippedInvalid > 0 ? "Nenhum item válido — corrija os códigos destacados." : "Adicione ao menos um item.", "error");
+      showToast(skippedInvalid > 0 ? "Nenhum item válido, corrija os códigos destacados." : "Adicione ao menos um item.", "error");
       return;
     }
 
@@ -2503,7 +2503,7 @@
     { tab:null, target:null, icon:ICON_BOX, title:"Bem-vindo(a)!", text:"Esse app registra as sobras (itens sem nota fiscal) recebidas das transportadoras. Vamos mostrar rapidinho as partes principais." },
     { tab:"lancar", target:"#batch-list", icon:ICON_PLUS, title:"Registrar sobras", text:"Escaneie o código de barras: cada leitura já lança 1 unidade na hora, sem precisar tocar em mais nada. Pra várias unidades do mesmo item, é só escanear de novo." },
     { tab:"lancar", target:"#card-lancamentos .list-head", icon:ICON_LIST, title:"Lançamentos", text:"Logo abaixo aparecem os itens já lançados. Errou algo? Toque no ícone da lixeira pra remover." },
-    { tab:"historico", target:"#view-historico .list-head", icon:ICON_CLOCK, title:"Histórico", text:"Essa aba mostra tudo que foi criado ou removido, com o nome de quem fez e a data — pra ter controle de tudo." },
+    { tab:"historico", target:"#view-historico .list-head", icon:ICON_CLOCK, title:"Histórico", text:"Essa aba mostra tudo que foi criado ou removido, com o nome de quem fez e a data, pra ter controle de tudo." },
     { tab:"painel", target:".panel-summary", icon:ICON_CHART, title:"Painel", text:"Mostra a quantidade e o valor total das sobras, um gráfico de recebimentos por mês, e botões pra exportar tudo em Excel." },
     { tab:"lancar", target:null, icon:ICON_CHECK, title:"Pronto!", text:"Agora você já sabe usar o app. Se quiser rever esse tour, é só tocar no ícone de interrogação (?) no topo da tela." }
   ];
