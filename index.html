@@ -379,6 +379,11 @@
   .list-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; }
   .list-empty{ padding:30px 20px 36px; text-align:center; color:var(--ink-muted); font-size:.82rem; }
   .entry-list-scroll{ max-height:420px; overflow-y:auto; overscroll-behavior:contain; }
+  .entry-group-head{
+    padding:10px 16px 6px; font-size:.72rem; font-weight:700; letter-spacing:.5px;
+    text-transform:uppercase; color:var(--ink-muted); border-top:1px solid var(--border);
+  }
+  .entry-group-head:first-child{ border-top:none; }
 
   .entry-row{ padding:13px 16px; border-top:1px solid var(--border); }
   .entry-row-main{
@@ -1566,7 +1571,11 @@
 
   var currentEntriesById = {};
 
-  function renderWithData(mine){
+  function renderWithData(mine, opts){
+    opts = opts || {};
+    var readOnly = !!opts.readOnly;
+    var groupByUnit = !!opts.groupByUnit;
+
     mine = mine.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
     currentEntriesById = {};
 
@@ -1576,31 +1585,47 @@
     el.entryList.innerHTML = "";
     if(mine.length === 0){
       el.listEmpty.style.display = "block";
-    } else {
-      el.listEmpty.style.display = "none";
-      mine.forEach(function(entry){
-        currentEntriesById[entry.id] = entry;
+      return;
+    }
+    el.listEmpty.style.display = "none";
 
-        var row = document.createElement("div");
-        row.className = "entry-row";
-        row.dataset.id = entry.id;
-        row.innerHTML =
-          '<div class="entry-row-main">' +
-            '<span class="code"></span>' +
-            '<span class="qty"></span>' +
-            '<span class="when"></span>' +
+    function renderRow(entry){
+      currentEntriesById[entry.id] = entry;
+
+      var row = document.createElement("div");
+      row.className = "entry-row";
+      row.dataset.id = entry.id;
+      row.innerHTML =
+        '<div class="entry-row-main">' +
+          '<span class="code"></span>' +
+          '<span class="qty"></span>' +
+          '<span class="when"></span>' +
+          (readOnly ? "" :
             '<button class="del" aria-label="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">' +
             '<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m1 0-.6 12.2A2 2 0 0 1 13.4 21H10.6a2 2 0 0 1-2-1.8L8 7"/>' +
-            '</svg></button>' +
-          '</div>' +
-          '<p class="desc"></p>';
-        row.querySelector(".code").textContent = entry.code;
-        row.querySelector(".qty").textContent = entry.qty;
-        row.querySelector(".when").textContent = formatWhen(entry.ts);
-        var descEl = row.querySelector(".desc");
-        if(entry.desc){ descEl.textContent = entry.desc; } else { descEl.style.display = "none"; }
-        el.entryList.appendChild(row);
+            '</svg></button>') +
+        '</div>' +
+        '<p class="desc"></p>';
+      row.querySelector(".code").textContent = entry.code;
+      row.querySelector(".qty").textContent = entry.qty;
+      row.querySelector(".when").textContent = formatWhen(entry.ts);
+      var descEl = row.querySelector(".desc");
+      if(entry.desc){ descEl.textContent = entry.desc; } else { descEl.style.display = "none"; }
+      el.entryList.appendChild(row);
+    }
+
+    if(groupByUnit){
+      ALL_UNITS.forEach(function(u){
+        var group = mine.filter(function(e){ return e.unit === u.unit; });
+        if(!group.length){ return; }
+        var head = document.createElement("div");
+        head.className = "entry-group-head";
+        head.textContent = u.unitLabel + " (" + group.length + ")";
+        el.entryList.appendChild(head);
+        group.forEach(renderRow);
       });
+    } else {
+      mine.forEach(renderRow);
     }
   }
 
@@ -1682,6 +1707,18 @@
   }
 
   function refreshAndRender(){
+    if(isMaster()){
+      setSyncStatus("syncing");
+      fetchServerEntriesAllUnits().then(function(serverItems){
+        renderWithData(serverItems, { readOnly: true, groupByUnit: true });
+        setSyncStatus("ok");
+      }).catch(function(){
+        renderWithData([], { readOnly: true, groupByUnit: true });
+        setSyncStatus("error");
+      });
+      return;
+    }
+
     var local = loadEntries().filter(function(e){ return e.unit === session.unit; });
     renderWithData(local);
     setSyncStatus("syncing");
