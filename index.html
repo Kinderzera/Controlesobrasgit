@@ -859,10 +859,13 @@
     usuariosList: document.getElementById("usuarios-list")
   };
 
-  var UNIT_LABELS = { linhares: "Linhares", cdafp: "CDAFP" };
+  // O valor "CD / AFP" precisa bater EXATAMENTE com o texto gravado na coluna
+  // Unidade da lista SOBRAS_REOPERACAO no SharePoint (confirmado consultando
+  // /api/listar sem filtro) — "CDAFP" (sem espaço/barra) não bate com nada lá.
+  var UNIT_LABELS = { linhares: "Linhares", cdafp: "CD / AFP" };
   var ALL_UNITS = [
     { unit: "linhares", unitLabel: "Linhares" },
-    { unit: "cdafp", unitLabel: "CDAFP" }
+    { unit: "cdafp", unitLabel: "CD / AFP" }
   ];
 
   var session = null;
