@@ -260,6 +260,12 @@
   .tab-btn svg{ width:20px; height:20px; }
   .tab-btn.active{ color:var(--accent); }
   .tab-btn:hover{ color:var(--accent); }
+  .tab-btn.hidden{ display:none; }
+
+  .input-wrap select{
+    flex:1; min-width:0; background:var(--surface-2); border:none; outline:none;
+    color:var(--ink); font-size:1rem;
+  }
 
   .card h2{ font-size:.95rem; font-weight:700; margin-bottom:4px; color:var(--ink); }
   .card .card-caption{ font-size:.76rem; color:var(--ink-muted); margin-bottom:14px; line-height:1.4; }
@@ -634,6 +640,50 @@
         </div>
       </div>
 
+      <div id="view-usuarios" class="tab-view">
+        <div class="card" id="card-cadastrar-usuario">
+          <h2>Cadastrar usuário</h2>
+          <p class="card-caption">Crie o acesso de um novo operador e defina qual unidade ele pode usar.</p>
+          <form id="usuario-form" novalidate>
+            <label class="field-label" for="input-novo-nome">Nome de exibição</label>
+            <div class="input-wrap">
+              <input id="input-novo-nome" type="text" autocomplete="off">
+            </div>
+
+            <label class="field-label field-label-spaced" for="input-novo-usuario">Usuário</label>
+            <div class="input-wrap">
+              <input id="input-novo-usuario" type="text" autocomplete="off">
+            </div>
+
+            <label class="field-label field-label-spaced" for="input-novo-senha">Senha</label>
+            <div class="input-wrap">
+              <input id="input-novo-senha" type="text" autocomplete="off">
+            </div>
+
+            <label class="field-label field-label-spaced" for="select-novo-unidade">Unidade</label>
+            <div class="input-wrap">
+              <select id="select-novo-unidade">
+                <option value="linhares">Linhares</option>
+                <option value="cdafp">CDAFP</option>
+              </select>
+            </div>
+
+            <p id="usuario-error" class="field-error">Preencha todos os campos.</p>
+
+            <button type="submit" class="btn-primary" id="btn-usuario-submit" style="margin-top:18px;">
+              CADASTRAR USUÁRIO
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </form>
+        </div>
+
+        <div class="card list-card">
+          <div class="list-head"><h2 style="margin:0;">Usuários cadastrados</h2></div>
+          <div id="usuarios-empty" class="list-empty">Nenhum usuário cadastrado ainda.</div>
+          <div id="usuarios-list"></div>
+        </div>
+      </div>
+
     </div>
 
     <nav class="tab-bar">
@@ -648,6 +698,10 @@
       <button type="button" class="tab-btn" id="tab-btn-painel" data-tab="painel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"></rect><rect x="10" y="7" width="4" height="13"></rect><rect x="17" y="3" width="4" height="17"></rect></svg>
         <span>Painel</span>
+      </button>
+      <button type="button" class="tab-btn hidden" id="tab-btn-usuarios" data-tab="usuarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        <span>Usuários</span>
       </button>
     </nav>
   </section>
@@ -790,8 +844,22 @@
     scannerClose: document.getElementById("scanner-close"),
     scannerTorch: document.getElementById("scanner-torch"),
     scannerReader: document.getElementById("scanner-reader"),
-    scanBeep: document.getElementById("scan-beep")
+    scanBeep: document.getElementById("scan-beep"),
+
+    tabBtnUsuarios: document.getElementById("tab-btn-usuarios"),
+    viewUsuarios: document.getElementById("view-usuarios"),
+    usuarioForm: document.getElementById("usuario-form"),
+    inputNovoNome: document.getElementById("input-novo-nome"),
+    inputNovoUsuario: document.getElementById("input-novo-usuario"),
+    inputNovoSenha: document.getElementById("input-novo-senha"),
+    selectNovoUnidade: document.getElementById("select-novo-unidade"),
+    usuarioError: document.getElementById("usuario-error"),
+    btnUsuarioSubmit: document.getElementById("btn-usuario-submit"),
+    usuariosEmpty: document.getElementById("usuarios-empty"),
+    usuariosList: document.getElementById("usuarios-list")
   };
+
+  var UNIT_LABELS = { linhares: "Linhares", cdafp: "CDAFP" };
 
   var session = null;
   var toastTimer = null;
@@ -1157,6 +1225,84 @@
       setSyncStatus("error");
     });
   }
+
+  /* ---------------- usuários (só perfil admin) ---------------- */
+
+  function renderUsuarios(list){
+    el.usuariosList.innerHTML = "";
+    if(!list.length){
+      el.usuariosEmpty.style.display = "block";
+      return;
+    }
+    el.usuariosEmpty.style.display = "none";
+    list.forEach(function(u){
+      var row = document.createElement("div");
+      row.className = "history-row";
+      row.innerHTML =
+        '<div class="history-top">' +
+          '<span class="unit-chip ' + u.unit + '"><span class="dot"></span><span></span></span>' +
+          '<span class="history-code"></span>' +
+        '</div>' +
+        '<div class="history-meta"></div>';
+      row.querySelector(".unit-chip span:last-child").textContent = u.unitLabel;
+      row.querySelector(".history-code").textContent = u.displayName;
+      row.querySelector(".history-meta").textContent = "usuário: " + u.username;
+      el.usuariosList.appendChild(row);
+    });
+  }
+
+  function refreshUsuarios(){
+    fetch("/api/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "list", actingUser: session.username })
+    }).then(function(resp){ return resp.json(); })
+      .then(function(data){ renderUsuarios((data && data.users) || []); })
+      .catch(function(){ renderUsuarios([]); });
+  }
+
+  el.usuarioForm.addEventListener("submit", function(ev){
+    ev.preventDefault();
+
+    var displayName = el.inputNovoNome.value.trim();
+    var username = el.inputNovoUsuario.value.trim().toLowerCase();
+    var password = el.inputNovoSenha.value;
+    var unit = el.selectNovoUnidade.value;
+    var unitLabel = UNIT_LABELS[unit] || unit;
+
+    if(!displayName || !username || !password || !unit){
+      el.usuarioError.textContent = "Preencha todos os campos.";
+      el.usuarioError.classList.add("show");
+      return;
+    }
+
+    el.btnUsuarioSubmit.disabled = true;
+    fetch("/api/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "create",
+        actingUser: session.username,
+        novo: { username: username, password: password, unit: unit, unitLabel: unitLabel, displayName: displayName }
+      })
+    }).then(function(resp){ return resp.json(); })
+      .then(function(data){
+        el.btnUsuarioSubmit.disabled = false;
+        if(data && data.ok){
+          el.usuarioError.classList.remove("show");
+          el.usuarioForm.reset();
+          showToast("Usuário cadastrado.");
+          refreshUsuarios();
+        } else {
+          el.usuarioError.textContent = (data && data.error) || "Não foi possível cadastrar.";
+          el.usuarioError.classList.add("show");
+        }
+      }).catch(function(){
+        el.btnUsuarioSubmit.disabled = false;
+        el.usuarioError.textContent = "Erro ao conectar. Tente novamente.";
+        el.usuarioError.classList.add("show");
+      });
+  });
 
   /* ---------------- painel (quantidade x valor) ---------------- */
 
@@ -2037,13 +2183,20 @@
 
   /* ---------------- login / logout ---------------- */
 
+  function applyRoleUI(){
+    if(el.tabBtnUsuarios){
+      el.tabBtnUsuarios.classList.toggle("hidden", !(session && session.role === "admin"));
+    }
+  }
+
   function enterApp(user){
-    session = { username: user.username, unit: user.unit, unitLabel: user.unitLabel, displayName: user.displayName };
+    session = { username: user.username, unit: user.unit, unitLabel: user.unitLabel, displayName: user.displayName, role: user.role || "user" };
     saveSession(session);
 
     el.unitChip.className = "unit-chip " + session.unit;
     el.unitChipLabel.textContent = session.unitLabel;
     el.userName.textContent = session.displayName;
+    applyRoleUI();
 
     resetBatchToSingleRow();
     showScreen("app");
@@ -2059,6 +2212,7 @@
     el.viewLancar.classList.toggle("active", name === "lancar");
     el.viewHistorico.classList.toggle("active", name === "historico");
     el.viewPainel.classList.toggle("active", name === "painel");
+    el.viewUsuarios.classList.toggle("active", name === "usuarios");
     el.tabButtons.forEach(function(btn){
       btn.classList.toggle("active", btn.dataset.tab === name);
     });
@@ -2066,6 +2220,7 @@
     if(appEl){ appEl.classList.toggle("wide-mode", name === "painel"); }
     if(name === "historico"){ refreshHistory(); }
     else if(name === "painel"){ refreshPainel(); }
+    else if(name === "usuarios"){ refreshUsuarios(); }
     else if(name === "lancar"){ refreshAndRender(); }
   }
 
@@ -2106,7 +2261,8 @@
           username: usuario.trim().toLowerCase(),
           unit: data.unit,
           unitLabel: data.unitLabel,
-          displayName: data.displayName
+          displayName: data.displayName,
+          role: data.role
         });
       } else {
         el.loginError.textContent = "Usuário ou senha inválidos.";
@@ -2359,6 +2515,7 @@
       el.unitChip.className = "unit-chip " + session.unit;
       el.unitChipLabel.textContent = session.unitLabel;
       el.userName.textContent = session.displayName;
+      applyRoleUI();
       showScreen("app");
       switchTab("lancar");
       refreshAndRender();
