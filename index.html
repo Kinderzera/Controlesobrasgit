@@ -1270,9 +1270,11 @@
     list.forEach(function(u){
       var row = document.createElement("div");
       row.className = "history-row";
+      var isAdmin = u.role === "admin";
       row.innerHTML =
         '<div class="history-top">' +
           '<span class="unit-chip ' + u.unit + '"><span class="dot"></span><span></span></span>' +
+          (isAdmin ? '<span class="history-badge criado">Admin</span>' : "") +
           '<span class="history-code"></span>' +
         '</div>' +
         '<div class="history-meta"></div>';

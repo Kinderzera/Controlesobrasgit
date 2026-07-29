@@ -44,8 +44,22 @@ export default async function handler(req, res) {
 
   try {
     if (action === "list") {
-      const raw = (await redisCmd(["HGETALL", USERS_KEY])) || [];
       const users = [];
+
+      // Usuários fixos, cadastrados na variável de ambiente SOBRAS_USERS_JSON.
+      loadEnvUsers().forEach((u) => {
+        users.push({
+          username: u.username || "",
+          unit: u.unit || "",
+          unitLabel: u.unitLabel || "",
+          displayName: u.displayName || "",
+          role: u.role || "user",
+          source: "env",
+        });
+      });
+
+      // Usuários cadastrados pela própria tela (ficam no Redis).
+      const raw = (await redisCmd(["HGETALL", USERS_KEY])) || [];
       for (let i = 0; i < raw.length; i += 2) {
         let val = {};
         try {
@@ -58,8 +72,11 @@ export default async function handler(req, res) {
           unit: val.unit || "",
           unitLabel: val.unitLabel || "",
           displayName: val.displayName || "",
+          role: val.role || "user",
+          source: "redis",
         });
       }
+
       res.status(200).json({ ok: true, users });
       return;
     }
