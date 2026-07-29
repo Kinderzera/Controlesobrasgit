@@ -270,6 +270,28 @@
     background:var(--surface-2); color:var(--ink);
   }
 
+  .custom-select{ position:relative; }
+  .custom-select-btn{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:12px 14px; color:var(--ink); font-size:1rem; cursor:pointer; text-align:left;
+    transition:border-color .15s ease;
+  }
+  .custom-select.open .custom-select-btn{ border-color:var(--accent); }
+  .custom-select-chevron{ width:18px; height:18px; color:var(--ink-muted); flex-shrink:0; transition:transform .15s ease; }
+  .custom-select.open .custom-select-chevron{ transform:rotate(180deg); }
+  .custom-select-menu{
+    display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:20;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm); overflow:hidden;
+  }
+  .custom-select.open .custom-select-menu{ display:block; }
+  .custom-select-option{
+    display:block; width:100%; text-align:left; padding:12px 14px; background:none; border:none;
+    color:var(--ink); font-size:.95rem; cursor:pointer;
+  }
+  .custom-select-option:hover, .custom-select-option.selected{ background:var(--accent-soft); color:var(--accent); }
+
   .card h2{ font-size:.95rem; font-weight:700; margin-bottom:4px; color:var(--ink); }
   .card .card-caption{ font-size:.76rem; color:var(--ink-muted); margin-bottom:14px; line-height:1.4; }
 
@@ -674,12 +696,16 @@
               <input id="input-novo-senha" type="text" autocomplete="off">
             </div>
 
-            <label class="field-label field-label-spaced" for="select-novo-unidade">Unidade</label>
-            <div class="input-wrap">
-              <select id="select-novo-unidade">
-                <option value="linhares">Linhares</option>
-                <option value="cdafp">CDAFP</option>
-              </select>
+            <label class="field-label field-label-spaced">Unidade</label>
+            <div class="custom-select" id="unidade-select">
+              <button type="button" class="custom-select-btn" id="unidade-select-btn">
+                <span id="unidade-select-label">Linhares</span>
+                <svg class="custom-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="custom-select-menu" id="unidade-select-menu">
+                <button type="button" class="custom-select-option selected" data-value="linhares">Linhares</button>
+                <button type="button" class="custom-select-option" data-value="cdafp">CDAFP</button>
+              </div>
             </div>
 
             <p id="usuario-error" class="field-error">Preencha todos os campos.</p>
@@ -872,7 +898,10 @@
     inputNovoNome: document.getElementById("input-novo-nome"),
     inputNovoUsuario: document.getElementById("input-novo-usuario"),
     inputNovoSenha: document.getElementById("input-novo-senha"),
-    selectNovoUnidade: document.getElementById("select-novo-unidade"),
+    unidadeSelect: document.getElementById("unidade-select"),
+    unidadeSelectBtn: document.getElementById("unidade-select-btn"),
+    unidadeSelectLabel: document.getElementById("unidade-select-label"),
+    unidadeSelectMenu: document.getElementById("unidade-select-menu"),
     usuarioError: document.getElementById("usuario-error"),
     btnUsuarioSubmit: document.getElementById("btn-usuario-submit"),
     usuariosEmpty: document.getElementById("usuarios-empty"),
@@ -1384,13 +1413,39 @@
       .catch(function(){ renderAcessos([]); });
   }
 
+  var novoUnidadeValue = "linhares";
+
+  function setNovoUnidade(value){
+    novoUnidadeValue = value;
+    var opt = el.unidadeSelectMenu.querySelector('[data-value="' + value + '"]');
+    el.unidadeSelectLabel.textContent = opt ? opt.textContent : value;
+    el.unidadeSelectMenu.querySelectorAll(".custom-select-option").forEach(function(o){
+      o.classList.toggle("selected", o.dataset.value === value);
+    });
+  }
+
+  el.unidadeSelectBtn.addEventListener("click", function(){
+    el.unidadeSelect.classList.toggle("open");
+  });
+  el.unidadeSelectMenu.querySelectorAll(".custom-select-option").forEach(function(o){
+    o.addEventListener("click", function(){
+      setNovoUnidade(o.dataset.value);
+      el.unidadeSelect.classList.remove("open");
+    });
+  });
+  document.addEventListener("click", function(ev){
+    if(!el.unidadeSelect.contains(ev.target)){
+      el.unidadeSelect.classList.remove("open");
+    }
+  });
+
   el.usuarioForm.addEventListener("submit", function(ev){
     ev.preventDefault();
 
     var displayName = el.inputNovoNome.value.trim();
     var username = el.inputNovoUsuario.value.trim().toLowerCase();
     var password = el.inputNovoSenha.value;
-    var unit = el.selectNovoUnidade.value;
+    var unit = novoUnidadeValue;
     var unitLabel = UNIT_LABELS[unit] || unit;
 
     if(!displayName || !username || !password || !unit){
@@ -1414,6 +1469,7 @@
         if(data && data.ok){
           el.usuarioError.classList.remove("show");
           el.usuarioForm.reset();
+          setNovoUnidade("linhares");
           showToast("Usuário cadastrado.");
           refreshUsuarios();
         } else {
