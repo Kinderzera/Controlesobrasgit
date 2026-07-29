@@ -410,6 +410,12 @@
   }
   .history-badge.criado{ background:var(--success-soft); color:var(--success); }
   .history-badge.excluido{ background:var(--danger-soft); color:var(--danger); }
+  .history-top .del{
+    width:28px; height:28px; border:none; background:none; color:var(--ink-muted);
+    cursor:pointer; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center;
+    margin-left:auto; flex-shrink:0;
+  }
+  .history-top .del:hover{ background:var(--danger-soft); color:var(--danger); }
   .history-code{ font-weight:700; font-size:.84rem; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .history-qty{ font-variant-numeric:tabular-nums; font-size:.78rem; color:var(--ink-muted); flex-shrink:0; }
   .history-meta{ font-size:.72rem; color:var(--ink-muted); }
@@ -1270,12 +1276,18 @@
     list.forEach(function(u){
       var row = document.createElement("div");
       row.className = "history-row";
+      row.dataset.username = u.username;
       var isAdmin = u.role === "admin";
+      var canDelete = u.source === "redis" && u.username !== session.username;
       row.innerHTML =
         '<div class="history-top">' +
           '<span class="unit-chip ' + u.unit + '"><span class="dot"></span><span></span></span>' +
           (isAdmin ? '<span class="history-badge criado">Admin</span>' : "") +
           '<span class="history-code"></span>' +
+          (canDelete ?
+            '<button type="button" class="del" aria-label="Excluir usuário"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">' +
+            '<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m1 0-.6 12.2A2 2 0 0 1 13.4 21H10.6a2 2 0 0 1-2-1.8L8 7"/>' +
+            '</svg></button>' : "") +
         '</div>' +
         '<div class="history-meta"></div>';
       row.querySelector(".unit-chip span:last-child").textContent = u.unitLabel;
@@ -1284,6 +1296,35 @@
       el.usuariosList.appendChild(row);
     });
   }
+
+  el.usuariosList.addEventListener("click", function(ev){
+    var btn = ev.target.closest(".del");
+    if(!btn) return;
+    var row = btn.closest(".history-row");
+    var username = row.dataset.username;
+    var nome = row.querySelector(".history-code").textContent;
+    openConfirmModal(
+      "Excluir usuário?",
+      'Tem certeza que deseja excluir o acesso de "' + nome + '" (' + username + ')? Essa ação não pode ser desfeita.',
+      function(){
+        fetch("/api/usuarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "delete", actingUser: session.username, username: username })
+        }).then(function(resp){ return resp.json(); })
+          .then(function(data){
+            if(data && data.ok){
+              showToast("Usuário excluído.");
+              refreshUsuarios();
+            } else {
+              showToast((data && data.error) || "Não foi possível excluir.", "error");
+            }
+          }).catch(function(){
+            showToast("Erro ao conectar. Tente novamente.", "error");
+          });
+      }
+    );
+  });
 
   function refreshUsuarios(){
     fetch("/api/usuarios", {

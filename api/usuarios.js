@@ -111,6 +111,35 @@ export default async function handler(req, res) {
       return;
     }
 
+    if (action === "delete") {
+      const alvo = String((req.body && req.body.username) || "")
+        .trim()
+        .toLowerCase();
+      const acting = String(actingUser || "").trim().toLowerCase();
+
+      if (!alvo) {
+        res.status(400).json({ ok: false, error: "Usuário inválido" });
+        return;
+      }
+      if (alvo === acting) {
+        res
+          .status(400)
+          .json({ ok: false, error: "Não é possível excluir o próprio usuário logado" });
+        return;
+      }
+      if (loadEnvUsers().some((u) => u.username === alvo)) {
+        res.status(400).json({
+          ok: false,
+          error: "Esse usuário é fixo (variável de ambiente) e não pode ser excluído por aqui",
+        });
+        return;
+      }
+
+      await redisCmd(["HDEL", USERS_KEY, alvo]);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     res.status(400).json({ ok: false, error: "Ação inválida" });
   } catch (e) {
     res.status(502).json({ ok: false, error: "Erro ao acessar armazenamento" });
