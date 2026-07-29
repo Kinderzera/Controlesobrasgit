@@ -1,6 +1,28 @@
-import { redisCmd } from "./_lib/redis.js";
+import {
+  redisCmd,
+  getClientIp,
+  ACCESS_LOG_KEY,
+  ACCESS_LOG_MAX,
+} from "./_lib/redis.js";
 
 const USERS_KEY = "sobras:users";
+
+async function logAccess(req, username) {
+  try {
+    await redisCmd([
+      "LPUSH",
+      ACCESS_LOG_KEY,
+      JSON.stringify({
+        username,
+        ip: getClientIp(req),
+        ts: new Date().toISOString(),
+      }),
+    ]);
+    await redisCmd(["LTRIM", ACCESS_LOG_KEY, "0", String(ACCESS_LOG_MAX - 1)]);
+  } catch (e) {
+    // Registro de acesso é best-effort — não pode derrubar o login.
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -22,6 +44,7 @@ export default async function handler(req, res) {
     (u) => u.username === norm && u.password === senha
   );
   if (envMatch) {
+    await logAccess(req, norm);
     res.status(200).json({
       ok: true,
       unit: envMatch.unit,
@@ -40,6 +63,7 @@ export default async function handler(req, res) {
     if (raw) {
       const stored = JSON.parse(raw);
       if (stored.password === senha) {
+        await logAccess(req, norm);
         res.status(200).json({
           ok: true,
           unit: stored.unit,

@@ -1,4 +1,4 @@
-import { redisCmd } from "./_lib/redis.js";
+import { redisCmd, ACCESS_LOG_KEY } from "./_lib/redis.js";
 
 const USERS_KEY = "sobras:users";
 
@@ -137,6 +137,21 @@ export default async function handler(req, res) {
 
       await redisCmd(["HDEL", USERS_KEY, alvo]);
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "accessLog") {
+      const raw = (await redisCmd(["LRANGE", ACCESS_LOG_KEY, "0", "49"])) || [];
+      const logs = raw
+        .map((s) => {
+          try {
+            return JSON.parse(s);
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      res.status(200).json({ ok: true, logs });
       return;
     }
 

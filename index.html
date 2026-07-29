@@ -693,6 +693,12 @@
           <div id="usuarios-empty" class="list-empty">Nenhum usuário cadastrado ainda.</div>
           <div id="usuarios-list"></div>
         </div>
+
+        <div class="card list-card">
+          <div class="list-head"><h2 style="margin:0;">Acessos recentes</h2></div>
+          <div id="acessos-empty" class="list-empty">Nenhum acesso registrado ainda.</div>
+          <div id="acessos-list"></div>
+        </div>
       </div>
 
     </div>
@@ -867,7 +873,9 @@
     usuarioError: document.getElementById("usuario-error"),
     btnUsuarioSubmit: document.getElementById("btn-usuario-submit"),
     usuariosEmpty: document.getElementById("usuarios-empty"),
-    usuariosList: document.getElementById("usuarios-list")
+    usuariosList: document.getElementById("usuarios-list"),
+    acessosEmpty: document.getElementById("acessos-empty"),
+    acessosList: document.getElementById("acessos-list")
   };
 
   // O valor "CD / AFP" precisa bater EXATAMENTE com o texto gravado na coluna
@@ -915,6 +923,13 @@
     var d = new Date(iso);
     var dd = d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" });
     var hh = d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+    return dd + " " + hh;
+  }
+
+  function formatWhenFull(iso){
+    var d = new Date(iso);
+    var dd = d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" });
+    var hh = d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
     return dd + " " + hh;
   }
 
@@ -1334,6 +1349,36 @@
     }).then(function(resp){ return resp.json(); })
       .then(function(data){ renderUsuarios((data && data.users) || []); })
       .catch(function(){ renderUsuarios([]); });
+  }
+
+  function renderAcessos(list){
+    el.acessosList.innerHTML = "";
+    if(!list.length){
+      el.acessosEmpty.style.display = "block";
+      return;
+    }
+    el.acessosEmpty.style.display = "none";
+    list.forEach(function(log){
+      var row = document.createElement("div");
+      row.className = "history-row";
+      row.innerHTML =
+        '<div class="history-top"><span class="history-code"></span></div>' +
+        '<div class="history-meta"></div>';
+      row.querySelector(".history-code").textContent = log.username || "?";
+      row.querySelector(".history-meta").textContent =
+        "IP " + (log.ip || "desconhecido") + " · " + formatWhenFull(log.ts);
+      el.acessosList.appendChild(row);
+    });
+  }
+
+  function refreshAcessos(){
+    fetch("/api/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "accessLog", actingUser: session.username })
+    }).then(function(resp){ return resp.json(); })
+      .then(function(data){ renderAcessos((data && data.logs) || []); })
+      .catch(function(){ renderAcessos([]); });
   }
 
   el.usuarioForm.addEventListener("submit", function(ev){
@@ -2355,7 +2400,7 @@
     if(appEl){ appEl.classList.toggle("wide-mode", name === "painel"); }
     if(name === "historico"){ refreshHistory(); }
     else if(name === "painel"){ refreshPainel(); }
-    else if(name === "usuarios"){ refreshUsuarios(); }
+    else if(name === "usuarios"){ refreshUsuarios(); refreshAcessos(); }
     else if(name === "lancar"){ refreshAndRender(); }
   }
 
