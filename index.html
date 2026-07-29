@@ -860,10 +860,20 @@
   };
 
   var UNIT_LABELS = { linhares: "Linhares", cdafp: "CDAFP" };
+  var ALL_UNITS = [
+    { unit: "linhares", unitLabel: "Linhares" },
+    { unit: "cdafp", unitLabel: "CDAFP" }
+  ];
 
   var session = null;
   var toastTimer = null;
   var catalog = { items: {}, count: 0, updatedAt: null };
+
+  // Perfil "master" (Dev): enxerga Histórico e Painel combinando as duas
+  // unidades, em vez de só a unidade em que ele está logado.
+  function isMaster(){
+    return !!(session && session.role === "admin");
+  }
 
   /* ---------------- helpers ---------------- */
 
@@ -1146,11 +1156,11 @@
     }).catch(function(){ /* best-effort */ });
   }
 
-  function fetchServerHistory(){
+  function fetchServerHistoryForUnit(unit, unitLabel){
     return fetchWithTimeout("/api/listarHistorico", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ unitLabel: session.unitLabel })
+      body: JSON.stringify({ unitLabel: unitLabel })
     }, 15000).then(function(resp){
       if(!resp.ok){ throw new Error("bad status"); }
       return resp.json();
@@ -1161,7 +1171,7 @@
           action: item.action,
           code: item.code,
           qty: item.qty,
-          unit: session.unit,
+          unit: unit,
           unitLabel: item.unitLabel,
           user: item.user,
           ts: item.ts
@@ -1170,8 +1180,18 @@
     });
   }
 
+  function fetchServerHistory(){
+    if(isMaster()){
+      return Promise.all(ALL_UNITS.map(function(u){
+        return fetchServerHistoryForUnit(u.unit, u.unitLabel).catch(function(){ return []; });
+      })).then(function(results){ return [].concat.apply([], results); });
+    }
+    return fetchServerHistoryForUnit(session.unit, session.unitLabel);
+  }
+
   function renderHistoryWithData(list){
     var all = list.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+    var showUnit = isMaster();
 
     el.historyList.innerHTML = "";
     if(all.length === 0){
@@ -1185,10 +1205,14 @@
         row.innerHTML =
           '<div class="history-top">' +
             '<span class="history-badge ' + (isCriado ? "criado" : "excluido") + '">' + (isCriado ? "Criado" : "Removido") + '</span>' +
+            (showUnit ? '<span class="unit-chip ' + (rec.unit || "") + '"><span class="dot"></span><span></span></span>' : "") +
             '<span class="history-code"></span>' +
             '<span class="history-qty"></span>' +
           '</div>' +
           '<div class="history-meta"></div>';
+        if(showUnit){
+          row.querySelector(".unit-chip span:last-child").textContent = rec.unitLabel || "";
+        }
         row.querySelector(".history-code").textContent = rec.code;
         row.querySelector(".history-qty").textContent = "(" + rec.qty + ")";
         row.querySelector(".history-meta").textContent = "por " + rec.user + " · " + formatWhen(rec.ts);
@@ -1214,7 +1238,7 @@
   }
 
   function refreshHistory(){
-    var local = loadAudit().filter(function(e){ return e.unit === session.unit; });
+    var local = isMaster() ? loadAudit() : loadAudit().filter(function(e){ return e.unit === session.unit; });
     renderHistoryWithData(local);
     setSyncStatus("syncing");
 
@@ -1366,6 +1390,21 @@
   }
 
   function refreshPainel(){
+    if(isMaster()){
+      setSyncStatus("syncing");
+      fetchServerEntriesAllUnits().then(function(serverItems){
+        renderPainel(aggregateForPainel(serverItems));
+        lastMonthlyData = aggregateMonthly(serverItems);
+        renderMonthlyChart(lastMonthlyData);
+        setSyncStatus("ok");
+      }).catch(function(){
+        renderPainel(aggregateForPainel([]));
+        renderMonthlyChart([]);
+        setSyncStatus("error");
+      });
+      return;
+    }
+
     var local = loadEntries().filter(function(e){ return e.unit === session.unit; });
     renderPainel(aggregateForPainel(local));
     renderMonthlyChart(aggregateMonthly(local));
@@ -1473,7 +1512,7 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
-      a.download = "recebimentos_por_mes_" + session.unit + ".csv";
+      a.download = "recebimentos_por_mes_" + (isMaster() ? "todas" : session.unit) + ".csv";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1511,7 +1550,7 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
-      a.download = "produtos_em_sobra_" + session.unit + ".csv";
+      a.download = "produtos_em_sobra_" + (isMaster() ? "todas" : session.unit) + ".csv";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1562,11 +1601,11 @@
     }
   }
 
-  function fetchServerEntries(){
+  function fetchServerEntriesForUnit(unit, unitLabel){
     return fetchWithTimeout("/api/listar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ unitLabel: session.unitLabel })
+      body: JSON.stringify({ unitLabel: unitLabel })
     }, 15000).then(function(resp){
       if(!resp.ok){ throw new Error("bad status"); }
       return resp.json();
@@ -1576,7 +1615,7 @@
         return {
           id: "sp_" + item.spId,
           spId: item.spId,
-          unit: session.unit,
+          unit: unit,
           unitLabel: item.unitLabel,
           code: item.code,
           desc: item.desc,
@@ -1586,6 +1625,19 @@
         };
       });
     });
+  }
+
+  // Usada pelo Lançar (fica sempre restrita à unidade logada, mesmo pro
+  // perfil master — ele lança fisicamente numa unidade só por vez).
+  function fetchServerEntries(){
+    return fetchServerEntriesForUnit(session.unit, session.unitLabel);
+  }
+
+  // Usada só pelo Painel do perfil master, pra combinar as duas unidades.
+  function fetchServerEntriesAllUnits(){
+    return Promise.all(ALL_UNITS.map(function(u){
+      return fetchServerEntriesForUnit(u.unit, u.unitLabel).catch(function(){ return []; });
+    })).then(function(results){ return [].concat.apply([], results); });
   }
 
   function mergeEntries(localList, serverList){
