@@ -64,9 +64,6 @@
   @media (min-width:460px){
     #app{ border-left:1px solid var(--border); border-right:1px solid var(--border); }
   }
-  @media (min-width:900px){
-    #app.wide-mode{ max-width:1080px; }
-  }
   #app.tour-active{ transition:none !important; }
 
   .screen{
@@ -263,6 +260,39 @@
   .tab-btn.active{ color:var(--accent); }
   .tab-btn:hover{ color:var(--accent); }
   .tab-btn.hidden{ display:none; }
+
+  /* ---- layout desktop: navegação vira barra lateral, tela usa mais largura ---- */
+  @media (min-width:900px){
+    #app{ max-width:1120px; }
+    #app.wide-mode{ max-width:1400px; }
+
+    #login-form .card{ max-width:420px; margin:0 auto; }
+
+    #screen-app.active{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      grid-template-rows:auto auto 1fr;
+      grid-template-areas:
+        "nav topbar"
+        "nav syncbar"
+        "nav body";
+      height:100%;
+    }
+    #screen-app .topbar{ grid-area:topbar; }
+    #screen-app .sync-bar{ grid-area:syncbar; }
+    #screen-app .app-body{ grid-area:body; min-height:0; }
+
+    .tab-bar{
+      grid-area:nav; flex-direction:column; align-items:stretch; justify-content:flex-start;
+      gap:4px; padding:20px 12px; border-top:none; border-right:1px solid var(--border);
+    }
+    .tab-btn{
+      flex:0 0 auto; flex-direction:row; justify-content:flex-start; align-items:center;
+      gap:12px; padding:11px 14px; border-radius:var(--radius-md); font-size:.85rem;
+    }
+    .tab-btn.active{ background:var(--accent-soft); }
+    .tab-btn:hover{ background:var(--surface-2); }
+  }
 
   .input-wrap select{
     flex:1; min-width:0; background:var(--surface-2); border:none; outline:none;
