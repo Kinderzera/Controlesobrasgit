@@ -61,7 +61,7 @@
     transition:max-width .2s ease;
     overflow:hidden;
   }
-  @media (min-width:460px){
+  @media (min-width:460px) and (max-width:899.98px){
     #app{ border-left:1px solid var(--border); border-right:1px solid var(--border); }
   }
   #app.tour-active{ transition:none !important; }
@@ -261,16 +261,15 @@
   .tab-btn:hover{ color:var(--accent); }
   .tab-btn.hidden{ display:none; }
 
-  /* ---- layout desktop: navegação vira barra lateral, tela usa mais largura ---- */
+  /* ---- layout desktop: navegação vira barra lateral, tela usa a largura toda ---- */
   @media (min-width:900px){
-    #app{ max-width:1120px; }
-    #app.wide-mode{ max-width:1400px; }
+    #app{ max-width:none; }
 
     #login-form .card{ max-width:420px; margin:0 auto; }
 
     #screen-app.active{
       display:grid;
-      grid-template-columns:220px 1fr;
+      grid-template-columns:240px 1fr;
       grid-template-rows:auto auto 1fr;
       grid-template-areas:
         "nav topbar"
@@ -281,6 +280,12 @@
     #screen-app .topbar{ grid-area:topbar; }
     #screen-app .sync-bar{ grid-area:syncbar; }
     #screen-app .app-body{ grid-area:body; min-height:0; }
+
+    /* Conteúdo de cada aba fica centralizado numa largura confortável de
+       leitura, mesmo com a casca (barra lateral/topo) preenchendo a tela
+       toda. O Painel (wide-mode) usa uma largura maior por causa da tabela. */
+    .tab-view{ max-width:1000px; margin:0 auto; width:100%; }
+    #app.wide-mode .tab-view{ max-width:1500px; }
 
     .tab-bar{
       grid-area:nav; flex-direction:column; align-items:stretch; justify-content:flex-start;
