@@ -160,6 +160,8 @@
   .unit-chip.linhares .dot{ background:var(--unit-linhares); }
   .unit-chip.cdafp{ background:var(--unit-cdafp-soft); color:var(--unit-cdafp); }
   .unit-chip.cdafp .dot{ background:var(--unit-cdafp); }
+  .unit-chip.admin{ background:var(--success-soft); color:var(--success); }
+  .unit-chip.admin .dot{ background:var(--success); }
 
   .icon-btn{
     background:none; border:none; color:var(--ink-muted); width:34px; height:34px;
@@ -2426,14 +2428,19 @@
     if(el.tabBtnUsuarios){
       el.tabBtnUsuarios.classList.toggle("hidden", !(session && session.role === "admin"));
     }
+    if(isMaster()){
+      el.unitChip.className = "unit-chip admin";
+      el.unitChipLabel.textContent = "ADMIN";
+    } else if(session){
+      el.unitChip.className = "unit-chip " + session.unit;
+      el.unitChipLabel.textContent = session.unitLabel;
+    }
   }
 
   function enterApp(user){
     session = { username: user.username, unit: user.unit, unitLabel: user.unitLabel, displayName: user.displayName, role: user.role || "user" };
     saveSession(session);
 
-    el.unitChip.className = "unit-chip " + session.unit;
-    el.unitChipLabel.textContent = session.unitLabel;
     el.userName.textContent = session.displayName;
     applyRoleUI();
 
@@ -2751,8 +2758,6 @@
     var s = loadSession();
     if(s && s.unit && s.unitLabel && s.displayName){
       session = s;
-      el.unitChip.className = "unit-chip " + session.unit;
-      el.unitChipLabel.textContent = session.unitLabel;
       el.userName.textContent = session.displayName;
       applyRoleUI();
       showScreen("app");
