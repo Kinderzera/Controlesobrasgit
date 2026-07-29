@@ -10,11 +10,23 @@ function loadEnvUsers() {
   }
 }
 
-function isAdmin(actingUser) {
+async function isAdmin(actingUser) {
   const norm = String(actingUser || "").trim().toLowerCase();
   if (!norm) return false;
-  const found = loadEnvUsers().find((u) => u.username === norm);
-  return !!(found && found.role === "admin");
+
+  const envMatch = loadEnvUsers().find((u) => u.username === norm);
+  if (envMatch) return envMatch.role === "admin";
+
+  // Admins também podem ter sido cadastrados só no Redis (ex.: usuário Dev
+  // criado direto lá, sem precisar editar a variável de ambiente sensível).
+  try {
+    const raw = await redisCmd(["HGET", USERS_KEY, norm]);
+    if (!raw) return false;
+    const stored = JSON.parse(raw);
+    return stored.role === "admin";
+  } catch (e) {
+    return false;
+  }
 }
 
 export default async function handler(req, res) {
@@ -25,7 +37,7 @@ export default async function handler(req, res) {
 
   const { action, actingUser } = req.body || {};
 
-  if (!isAdmin(actingUser)) {
+  if (!(await isAdmin(actingUser))) {
     res.status(403).json({ ok: false, error: "Sem permissão" });
     return;
   }
