@@ -265,8 +265,27 @@
   @media (min-width:900px){
     #app{ max-width:none; }
 
-    #screen-login{ align-items:center; }
-    #login-form{ max-width:420px; width:100%; margin:0 auto; }
+    /* Login em tela cheia: painel de marca de um lado, formulário do outro,
+       preenchendo os dois lados sem sobra vazia. */
+    #screen-login.active{
+      display:grid; grid-template-columns:1fr 1fr; height:100%;
+    }
+    #screen-login .brand-center{
+      height:100%; justify-content:center; padding:40px;
+      background:radial-gradient(circle at 30% 30%, rgba(8,145,178,0.18), transparent 62%);
+      border-right:1px solid var(--border);
+    }
+    #screen-login .logo-badge{ width:84px; height:84px; border-radius:22px; }
+    #screen-login .logo-badge svg{ width:42px; height:42px; }
+    #screen-login .brand-name{ font-size:1.7rem; }
+    #screen-login .brand-sub{ max-width:380px; font-size:.98rem; }
+
+    #login-form{
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      height:100%; max-width:none; width:100%; margin:0; padding:40px;
+    }
+    #login-form .stage{ flex:none; width:100%; max-width:400px; padding:0; }
+    #login-form .bar-bottom{ width:100%; max-width:400px; padding:24px 0 0; }
 
     #screen-app.active{
       display:grid;
