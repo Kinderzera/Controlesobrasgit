@@ -51,8 +51,7 @@ export default async function handler(req, res) {
       }
     }
   } catch (e) {
-    res.status(401).json({ ok: false, debug: String((e && e.message) || e) });
-    return;
+    // Redis indisponível/não configurado — segue como usuário não encontrado.
   }
 
   res.status(401).json({ ok: false });
