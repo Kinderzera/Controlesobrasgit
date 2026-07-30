@@ -158,7 +158,7 @@
     display:flex; align-items:center; gap:10px; padding:16px;
     background:var(--surface); border-bottom:1px solid var(--border);
   }
-  .topbar-title{ flex:1; color:var(--ink); font-weight:700; font-size:.92rem; letter-spacing:.4px; }
+  .topbar-title{ flex:1; color:var(--ink); font-weight:800; font-size:1.05rem; letter-spacing:.3px; }
 
   .unit-chip{
     display:inline-flex; align-items:center; gap:7px; font-size:.7rem; font-weight:800;
@@ -664,7 +664,7 @@
   <section id="screen-app" class="screen">
     <header class="topbar">
       <span id="unit-chip" class="unit-chip"><span class="dot"></span><span id="unit-chip-label"></span></span>
-      <span class="topbar-title"></span>
+      <span class="topbar-title" id="topbar-title"></span>
       <span class="user-block">
         <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         <span class="user-name" id="user-name"></span>
@@ -952,6 +952,7 @@
     loginError: document.getElementById("login-error"),
     unitChip: document.getElementById("unit-chip"),
     unitChipLabel: document.getElementById("unit-chip-label"),
+    topbarTitle: document.getElementById("topbar-title"),
     userName: document.getElementById("user-name"),
     btnLogout: document.getElementById("btn-logout"),
     userNameSidebar: document.getElementById("user-name-sidebar"),
@@ -2684,7 +2685,10 @@
     }
   }
 
+  var TAB_TITLES = { lancar: "Registrar sobras", historico: "Histórico", painel: "Painel", usuarios: "Painel DEV" };
+
   function switchTab(name){
+    el.topbarTitle.textContent = TAB_TITLES[name] || "";
     el.viewLancar.classList.toggle("active", name === "lancar");
     el.viewHistorico.classList.toggle("active", name === "historico");
     el.viewPainel.classList.toggle("active", name === "painel");
