@@ -1,13 +1,8 @@
-import { requireSession } from "./_lib/auth.js";
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false });
     return;
   }
-
-  const session = requireSession(req, res);
-  if (!session) return;
 
   const listUrl = process.env.SHAREPOINT_LIST_FLOW_URL;
   if (!listUrl) {
@@ -15,9 +10,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Quem não é admin só pode listar a própria unidade — a unidade pedida
-  // pelo cliente é ignorada e substituída pela da sessão verificada.
-  const unitLabel = session.role === "admin" ? (req.body || {}).unitLabel : session.unitLabel;
+  const { unitLabel } = req.body || {};
 
   try {
     const upstream = await fetch(listUrl, {

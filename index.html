@@ -1061,12 +1061,6 @@
   var toastTimer = null;
   var catalog = { items: {}, count: 0, updatedAt: null };
 
-  // Cabeçalho de autenticação anexado a toda chamada às APIs que exigem
-  // login — sem isso, o servidor responde 401 (ver api/_lib/auth.js).
-  function authHeaders(){
-    return (session && session.token) ? { "Authorization": "Bearer " + session.token } : {};
-  }
-
   // Perfil "master" (Dev): enxerga Histórico e Painel combinando as duas
   // unidades, em vez de só a unidade em que ele está logado.
   function isMaster(){
@@ -1158,7 +1152,7 @@
     };
     return fetch("/api/sobras", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(function(resp){
       if(!resp.ok){ return null; }
@@ -1211,7 +1205,7 @@
     };
     return fetch("/api/sobras", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(function(resp){ return resp.ok; }).catch(function(){ return false; });
   }
@@ -1348,7 +1342,7 @@
     if(typeof fetch !== "function"){ return; }
     fetch("/api/historico", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         acao: record.action,
         sku: record.code,
@@ -1364,7 +1358,7 @@
   function fetchServerHistoryForUnit(unit, unitLabel){
     return fetchWithTimeout("/api/listarHistorico", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ unitLabel: unitLabel })
     }, 15000).then(function(resp){
       if(!resp.ok){ throw new Error("bad status"); }
@@ -1538,7 +1532,7 @@
         function(){
           fetch("/api/usuarios", {
             method: "POST",
-            headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "delete", actingUser: session.username, username: username })
           }).then(function(resp){ return resp.json(); })
             .then(function(data){
@@ -1590,7 +1584,7 @@
       }
       fetch("/api/usuarios", {
         method: "POST",
-        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "changePassword", actingUser: session.username, username: saveRow.dataset.username, password: newPassword })
       }).then(function(resp){ return resp.json(); })
         .then(function(data){
@@ -1611,7 +1605,7 @@
   function refreshUsuarios(){
     fetch("/api/usuarios", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "list", actingUser: session.username })
     }).then(function(resp){ return resp.json(); })
       .then(function(data){ renderUsuarios((data && data.users) || []); })
@@ -1641,7 +1635,7 @@
   function refreshAcessos(){
     fetch("/api/usuarios", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "accessLog", actingUser: session.username })
     }).then(function(resp){ return resp.json(); })
       .then(function(data){ renderAcessos((data && data.logs) || []); })
@@ -1692,7 +1686,7 @@
     el.btnUsuarioSubmit.disabled = true;
     fetch("/api/usuarios", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create",
         actingUser: session.username,
@@ -2015,7 +2009,7 @@
   function fetchServerEntriesForUnit(unit, unitLabel){
     return fetchWithTimeout("/api/listar", {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ unitLabel: unitLabel })
     }, 15000).then(function(resp){
       if(!resp.ok){ throw new Error("bad status"); }
@@ -2672,7 +2666,7 @@
   }
 
   function enterApp(user){
-    session = { username: user.username, unit: user.unit, unitLabel: user.unitLabel, displayName: user.displayName, role: user.role || "user", token: user.token || "" };
+    session = { username: user.username, unit: user.unit, unitLabel: user.unitLabel, displayName: user.displayName, role: user.role || "user" };
     saveSession(session);
 
     el.userName.textContent = session.displayName;
@@ -2748,8 +2742,7 @@
           unit: data.unit,
           unitLabel: data.unitLabel,
           displayName: data.displayName,
-          role: data.role,
-          token: data.token
+          role: data.role
         });
       } else {
         el.loginError.textContent = "Usuário ou senha inválidos.";
@@ -2998,7 +2991,7 @@
     tryAutoFetchCatalog();
 
     var s = loadSession();
-    if(s && s.unit && s.unitLabel && s.displayName && s.token){
+    if(s && s.unit && s.unitLabel && s.displayName){
       session = s;
       el.userName.textContent = session.displayName;
       el.userNameSidebar.textContent = session.displayName;
