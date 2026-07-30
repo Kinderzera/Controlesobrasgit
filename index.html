@@ -30,6 +30,8 @@
     --unit-linhares-soft: rgba(34,184,166,0.14);
     --unit-cdafp:#E2924B;
     --unit-cdafp-soft: rgba(226,146,75,0.14);
+    --unit-eusebio:#5B8DEF;
+    --unit-eusebio-soft: rgba(91,141,239,0.14);
     --radius-lg:18px;
     --radius-md:12px;
     --radius-sm:8px;
@@ -214,6 +216,8 @@
   .unit-chip.linhares .dot{ background:var(--unit-linhares); }
   .unit-chip.cdafp{ background:var(--unit-cdafp-soft); color:var(--unit-cdafp); }
   .unit-chip.cdafp .dot{ background:var(--unit-cdafp); }
+  .unit-chip.eusebio{ background:var(--unit-eusebio-soft); color:var(--unit-eusebio); }
+  .unit-chip.eusebio .dot{ background:var(--unit-eusebio); }
   .unit-chip.admin{ background:var(--success-soft); color:var(--success); }
   .unit-chip.admin .dot{ background:var(--success); }
 
@@ -892,6 +896,7 @@
               <div class="custom-select-menu" id="unidade-select-menu">
                 <button type="button" class="custom-select-option selected" data-value="linhares">Linhares</button>
                 <button type="button" class="custom-select-option" data-value="cdafp">CD / AFP</button>
+                <button type="button" class="custom-select-option" data-value="eusebio">Eusébio</button>
               </div>
             </div>
 
@@ -1132,10 +1137,11 @@
   // O valor "CD / AFP" precisa bater EXATAMENTE com o texto gravado na coluna
   // Unidade da lista SOBRAS_REOPERACAO no SharePoint (confirmado consultando
   // /api/listar sem filtro) — "CDAFP" (sem espaço/barra) não bate com nada lá.
-  var UNIT_LABELS = { linhares: "Linhares", cdafp: "CD / AFP" };
+  var UNIT_LABELS = { linhares: "Linhares", cdafp: "CD / AFP", eusebio: "Eusébio" };
   var ALL_UNITS = [
     { unit: "linhares", unitLabel: "Linhares" },
-    { unit: "cdafp", unitLabel: "CD / AFP" }
+    { unit: "cdafp", unitLabel: "CD / AFP" },
+    { unit: "eusebio", unitLabel: "Eusébio" }
   ];
 
   var session = null;
