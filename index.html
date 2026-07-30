@@ -156,17 +156,47 @@
   /* ---- loading (pós-login) ---- */
   .loading-screen{
     flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:20px; padding:24px;
+    gap:34px; padding:24px;
   }
   .loading-badge{
-    width:64px; height:64px; border-radius:20px;
+    width:60px; height:60px; border-radius:18px;
     background: linear-gradient(135deg, var(--accent), var(--accent-dark));
     display:flex; align-items:center; justify-content:center;
     box-shadow: 0 8px 20px rgba(8,145,178,0.28);
   }
-  .loading-badge svg{ width:30px; height:30px; color:#fff; animation: loading-spin 0.9s linear infinite; }
+  .loading-badge svg{ width:28px; height:28px; color:#fff; }
+
+  .loading-steps{
+    list-style:none; margin:0; padding:0; width:100%; max-width:290px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .loading-step{
+    display:flex; align-items:center; gap:12px; opacity:.4;
+    transition:opacity .25s ease;
+  }
+  .loading-step.active, .loading-step.done{ opacity:1; }
+  .step-icon{
+    width:20px; height:20px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .step-icon .icon-dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-muted); display:block; }
+  .step-icon .icon-spinner{
+    display:none; width:18px; height:18px; border-radius:50%;
+    border:2px solid var(--accent-soft); border-top-color:var(--accent);
+  }
+  .step-icon .icon-check{ display:none; width:19px; height:19px; color:var(--success); }
+  .loading-step:not(.active):not(.done) .icon-dot{ display:block; }
+  .loading-step:not(.active):not(.done) .icon-spinner{ display:none; }
+  .loading-step:not(.active):not(.done) .icon-check{ display:none; }
+  .loading-step.active .icon-dot{ display:none; }
+  .loading-step.active .icon-spinner{ display:block; animation: loading-spin .8s linear infinite; }
+  .loading-step.active .icon-check{ display:none; }
+  .loading-step.done .icon-dot{ display:none; }
+  .loading-step.done .icon-spinner{ display:none; }
+  .loading-step.done .icon-check{ display:block; }
   @keyframes loading-spin{ to{ transform:rotate(360deg); } }
-  .loading-text{ color:var(--ink-muted); font-size:.9rem; font-weight:600; letter-spacing:.2px; }
+  .step-label{ font-size:.86rem; font-weight:600; letter-spacing:.1px; color:var(--ink-muted); }
+  .loading-step.active .step-label{ color:var(--ink); }
 
   /* ---- topbar (app) ---- */
   .topbar{
@@ -679,9 +709,34 @@
   <section id="screen-loading" class="screen">
     <div class="loading-screen">
       <div class="loading-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
       </div>
-      <p class="loading-text">Preparando seu painel...</p>
+      <ul class="loading-steps" id="loading-steps">
+        <li class="loading-step" id="loading-step-0">
+          <span class="step-icon">
+            <span class="icon-dot"></span>
+            <span class="icon-spinner"></span>
+            <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </span>
+          <span class="step-label">Autenticando usuário...</span>
+        </li>
+        <li class="loading-step" id="loading-step-1">
+          <span class="step-icon">
+            <span class="icon-dot"></span>
+            <span class="icon-spinner"></span>
+            <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </span>
+          <span class="step-label">Sincronizando dados da unidade...</span>
+        </li>
+        <li class="loading-step" id="loading-step-2">
+          <span class="step-icon">
+            <span class="icon-dot"></span>
+            <span class="icon-spinner"></span>
+            <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </span>
+          <span class="step-label">Carregando painel de controle...</span>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -2746,6 +2801,26 @@
     el.inputUsuario.focus();
   }
 
+  var LOADING_STEP_IDS = ["loading-step-0", "loading-step-1", "loading-step-2"];
+
+  function runLoadingSequence(onDone){
+    var steps = LOADING_STEP_IDS.map(function(id){ return document.getElementById(id); });
+    steps.forEach(function(s){ s.classList.remove("active", "done"); });
+
+    var i = 0;
+    function next(){
+      if(i > 0){ steps[i - 1].classList.remove("active"); steps[i - 1].classList.add("done"); }
+      if(i < steps.length){
+        steps[i].classList.add("active");
+        i++;
+        setTimeout(next, 550);
+      } else {
+        setTimeout(onDone, 300);
+      }
+    }
+    next();
+  }
+
   function attemptLogin(){
     var usuario = el.inputUsuario.value;
     var senha = el.inputSenha.value;
@@ -2766,7 +2841,7 @@
       if(data && data.ok){
         el.loginError.classList.remove("show");
         showScreen("loading");
-        setTimeout(function(){
+        runLoadingSequence(function(){
           enterApp({
             username: usuario.trim().toLowerCase(),
             unit: data.unit,
@@ -2774,7 +2849,7 @@
             displayName: data.displayName,
             role: data.role
           });
-        }, 800);
+        });
       } else {
         el.loginError.textContent = "Usuário ou senha inválidos.";
         el.loginError.classList.add("show");
