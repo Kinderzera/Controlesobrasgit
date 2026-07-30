@@ -1,4 +1,5 @@
 import { redisCmd, ACCESS_LOG_KEY } from "./_lib/redis.js";
+import { requireSession } from "./_lib/auth.js";
 
 const USERS_KEY = "sobras:users";
 
@@ -10,37 +11,24 @@ function loadEnvUsers() {
   }
 }
 
-async function isAdmin(actingUser) {
-  const norm = String(actingUser || "").trim().toLowerCase();
-  if (!norm) return false;
-
-  const envMatch = loadEnvUsers().find((u) => u.username === norm);
-  if (envMatch) return envMatch.role === "admin";
-
-  // Admins também podem ter sido cadastrados só no Redis (ex.: usuário Dev
-  // criado direto lá, sem precisar editar a variável de ambiente sensível).
-  try {
-    const raw = await redisCmd(["HGET", USERS_KEY, norm]);
-    if (!raw) return false;
-    const stored = JSON.parse(raw);
-    return stored.role === "admin";
-  } catch (e) {
-    return false;
-  }
-}
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false });
     return;
   }
 
-  const { action, actingUser } = req.body || {};
+  const session = requireSession(req, res);
+  if (!session) return;
 
-  if (!(await isAdmin(actingUser))) {
+  // O papel (admin/user) vem da sessão assinada no login, não de um campo
+  // enviado pelo cliente — não dá pra "virar admin" só mandando outro nome.
+  if (session.role !== "admin") {
     res.status(403).json({ ok: false, error: "Sem permissão" });
     return;
   }
+
+  const { action } = req.body || {};
+  const actingUser = session.username;
 
   try {
     if (action === "list") {

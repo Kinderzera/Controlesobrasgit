@@ -4,6 +4,7 @@ import {
   ACCESS_LOG_KEY,
   ACCESS_LOG_MAX,
 } from "./_lib/redis.js";
+import { createSessionToken } from "./_lib/auth.js";
 
 const USERS_KEY = "sobras:users";
 
@@ -45,13 +46,21 @@ export default async function handler(req, res) {
   );
   if (envMatch) {
     await logAccess(req, norm);
-    res.status(200).json({
-      ok: true,
+    const session = {
+      username: norm,
       unit: envMatch.unit,
       unitLabel: envMatch.unitLabel,
       displayName: envMatch.displayName,
       role: envMatch.role || "user",
-    });
+    };
+    let token;
+    try {
+      token = createSessionToken(session);
+    } catch (e) {
+      res.status(500).json({ ok: false, error: "SESSION_SECRET não configurada" });
+      return;
+    }
+    res.status(200).json({ ok: true, token, ...session });
     return;
   }
 
@@ -64,13 +73,21 @@ export default async function handler(req, res) {
       const stored = JSON.parse(raw);
       if (stored.password === senha) {
         await logAccess(req, norm);
-        res.status(200).json({
-          ok: true,
+        const session = {
+          username: norm,
           unit: stored.unit,
           unitLabel: stored.unitLabel,
           displayName: stored.displayName,
           role: stored.role || "user",
-        });
+        };
+        let token;
+        try {
+          token = createSessionToken(session);
+        } catch (e) {
+          res.status(500).json({ ok: false, error: "SESSION_SECRET não configurada" });
+          return;
+        }
+        res.status(200).json({ ok: true, token, ...session });
         return;
       }
     }
