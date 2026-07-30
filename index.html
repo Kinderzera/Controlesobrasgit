@@ -269,6 +269,7 @@
   .tab-btn.active{ color:var(--accent); }
   .tab-btn:hover{ color:var(--accent); }
   .tab-btn.hidden{ display:none; }
+  .nav-profile{ display:none; }
 
   /* ---- layout desktop: navegação vira barra lateral, tela usa a largura toda ---- */
   @media (min-width:900px){
@@ -328,6 +329,18 @@
     }
     .tab-btn.active{ background:var(--accent-soft); }
     .tab-btn:hover{ background:var(--surface-2); }
+
+    #screen-app .topbar .user-block,
+    #screen-app .topbar #btn-logout{ display:none; }
+
+    .nav-profile{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      margin-top:auto; padding:14px 10px 6px; border-top:1px solid var(--border);
+    }
+    .nav-profile .user-block{ min-width:0; flex:1; }
+    .nav-profile .user-name{
+      text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
   }
 
   .input-wrap select{
@@ -832,6 +845,16 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         <span>Painel DEV</span>
       </button>
+
+      <div class="nav-profile">
+        <span class="user-block">
+          <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span class="user-name" id="user-name-sidebar"></span>
+        </span>
+        <button type="button" class="icon-btn" id="btn-logout-sidebar" title="Sair" aria-label="Sair">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+        </button>
+      </div>
     </nav>
   </section>
 </div>
@@ -919,6 +942,8 @@
     unitChipLabel: document.getElementById("unit-chip-label"),
     userName: document.getElementById("user-name"),
     btnLogout: document.getElementById("btn-logout"),
+    userNameSidebar: document.getElementById("user-name-sidebar"),
+    btnLogoutSidebar: document.getElementById("btn-logout-sidebar"),
 
 
     batchForm: document.getElementById("batch-form"),
@@ -2615,6 +2640,7 @@
     saveSession(session);
 
     el.userName.textContent = session.displayName;
+    el.userNameSidebar.textContent = session.displayName;
     applyRoleUI();
 
     resetBatchToSingleRow();
@@ -2706,6 +2732,7 @@
   });
 
   el.btnLogout.addEventListener("click", doLogout);
+  el.btnLogoutSidebar.addEventListener("click", doLogout);
 
   el.btnRefresh.addEventListener("click", function(){
     if(el.viewHistorico.classList.contains("active")){
@@ -2934,6 +2961,7 @@
     if(s && s.unit && s.unitLabel && s.displayName){
       session = s;
       el.userName.textContent = session.displayName;
+      el.userNameSidebar.textContent = session.displayName;
       applyRoleUI();
       showScreen("app");
       switchTab("lancar");
