@@ -153,6 +153,21 @@
   .btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
   .btn-primary:disabled:active{ transform:none; }
 
+  /* ---- loading (pós-login) ---- */
+  .loading-screen{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:20px; padding:24px;
+  }
+  .loading-badge{
+    width:64px; height:64px; border-radius:20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 20px rgba(8,145,178,0.28);
+  }
+  .loading-badge svg{ width:30px; height:30px; color:#fff; animation: loading-spin 0.9s linear infinite; }
+  @keyframes loading-spin{ to{ transform:rotate(360deg); } }
+  .loading-text{ color:var(--ink-muted); font-size:.9rem; font-weight:600; letter-spacing:.2px; }
+
   /* ---- topbar (app) ---- */
   .topbar{
     display:flex; align-items:center; gap:10px; padding:16px;
@@ -660,6 +675,16 @@
     </form>
   </section>
 
+  <!-- LOADING (transição pós-login) -->
+  <section id="screen-loading" class="screen">
+    <div class="loading-screen">
+      <div class="loading-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path></svg>
+      </div>
+      <p class="loading-text">Preparando seu painel...</p>
+    </div>
+  </section>
+
   <!-- APP -->
   <section id="screen-app" class="screen">
     <header class="topbar">
@@ -944,6 +969,7 @@
 
   var el = {
     screenLogin: document.getElementById("screen-login"),
+    screenLoading: document.getElementById("screen-loading"),
     screenApp: document.getElementById("screen-app"),
     loginForm: document.getElementById("login-form"),
     inputUsuario: document.getElementById("input-usuario"),
@@ -1078,8 +1104,10 @@
 
   function showScreen(name){
     el.screenLogin.classList.remove("active");
+    el.screenLoading.classList.remove("active");
     el.screenApp.classList.remove("active");
     if(name === "login"){ el.screenLogin.classList.add("active"); }
+    else if(name === "loading"){ el.screenLoading.classList.add("active"); }
     else{ el.screenApp.classList.add("active"); }
   }
 
@@ -2737,13 +2765,16 @@
     }).then(function(data){
       if(data && data.ok){
         el.loginError.classList.remove("show");
-        enterApp({
-          username: usuario.trim().toLowerCase(),
-          unit: data.unit,
-          unitLabel: data.unitLabel,
-          displayName: data.displayName,
-          role: data.role
-        });
+        showScreen("loading");
+        setTimeout(function(){
+          enterApp({
+            username: usuario.trim().toLowerCase(),
+            unit: data.unit,
+            unitLabel: data.unitLabel,
+            displayName: data.displayName,
+            role: data.role
+          });
+        }, 800);
       } else {
         el.loginError.textContent = "Usuário ou senha inválidos.";
         el.loginError.classList.add("show");
