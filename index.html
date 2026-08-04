@@ -542,7 +542,10 @@
   .bar-col.current .bar-label{ color:var(--accent); font-weight:700; }
 
   .list-card{ overflow:hidden; padding:0; }
-  .list-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; }
+  .list-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 16px 12px; }
+  .list-search-wrap{ padding:0 16px 12px; }
+  .list-search-wrap .input-wrap{ padding:9px 12px; }
+  .list-search-wrap input{ font-size:.86rem; }
   .list-empty{ padding:30px 20px 36px; text-align:center; color:var(--ink-muted); font-size:.82rem; }
   .entry-list-scroll{ max-height:420px; overflow-y:auto; overscroll-behavior:contain; }
   .entry-group-head{
@@ -803,7 +806,16 @@
         </div>
 
         <div class="card list-card" id="card-lancamentos">
-          <div class="list-head"><h2 style="margin:0;">Lançamentos</h2></div>
+          <div class="list-head">
+            <h2 style="margin:0;">Lançamentos</h2>
+            <button type="button" class="btn-compact" id="btn-export-lancamentos">Exportar CSV</button>
+          </div>
+          <div class="list-search-wrap">
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="input-search-lancamentos" type="text" placeholder="Buscar por código ou descrição" autocomplete="off">
+            </div>
+          </div>
           <div id="list-empty" class="list-empty">Nenhum lançamento ainda. Adicione o primeiro item acima.</div>
           <div id="entry-list" class="entry-list-scroll"></div>
         </div>
@@ -811,7 +823,16 @@
 
       <div id="view-historico" class="tab-view">
         <div class="card list-card">
-          <div class="list-head"><h2 style="margin:0;">Histórico</h2></div>
+          <div class="list-head">
+            <h2 style="margin:0;">Histórico</h2>
+            <button type="button" class="btn-compact" id="btn-export-historico">Exportar CSV</button>
+          </div>
+          <div class="list-search-wrap">
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="input-search-historico" type="text" placeholder="Buscar por código ou usuário" autocomplete="off">
+            </div>
+          </div>
           <div id="history-empty" class="list-empty">Nenhum registro ainda.</div>
           <div id="history-list"></div>
         </div>
@@ -1054,8 +1075,12 @@
     statQty: document.getElementById("stat-qty"),
     listEmpty: document.getElementById("list-empty"),
     entryList: document.getElementById("entry-list"),
+    searchLancamentos: document.getElementById("input-search-lancamentos"),
+    btnExportLancamentos: document.getElementById("btn-export-lancamentos"),
     historyEmpty: document.getElementById("history-empty"),
     historyList: document.getElementById("history-list"),
+    searchHistorico: document.getElementById("input-search-historico"),
+    btnExportHistorico: document.getElementById("btn-export-historico"),
     tabButtons: document.querySelectorAll(".tab-btn"),
     viewLancar: document.getElementById("view-lancar"),
     viewHistorico: document.getElementById("view-historico"),
@@ -1477,12 +1502,30 @@
     return fetchServerHistoryForUnit(session.unit, session.unitLabel);
   }
 
+  var lastHistoryData = [];
+
+  function historySearchTerm(){
+    return (el.searchHistorico.value || "").trim().toLowerCase();
+  }
+
+  function filterHistoryList(list, term){
+    if(!term){ return list; }
+    return list.filter(function(rec){
+      return (rec.code && rec.code.toLowerCase().indexOf(term) !== -1) ||
+        (rec.user && rec.user.toLowerCase().indexOf(term) !== -1) ||
+        (rec.unitLabel && rec.unitLabel.toLowerCase().indexOf(term) !== -1);
+    });
+  }
+
   function renderHistoryWithData(list){
-    var all = list.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+    lastHistoryData = list.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+    var term = historySearchTerm();
+    var all = filterHistoryList(lastHistoryData, term);
     var showUnit = isMaster();
 
     el.historyList.innerHTML = "";
     if(all.length === 0){
+      el.historyEmpty.textContent = term ? "Nenhum registro encontrado pra essa busca." : "Nenhum registro ainda.";
       el.historyEmpty.style.display = "block";
     } else {
       el.historyEmpty.style.display = "none";
@@ -1508,6 +1551,49 @@
       });
     }
   }
+
+  el.searchHistorico.addEventListener("input", function(){
+    renderHistoryWithData(lastHistoryData);
+  });
+
+  el.btnExportHistorico.addEventListener("click", function(){
+    var term = historySearchTerm();
+    var list = filterHistoryList(lastHistoryData, term).slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+    if(!list.length){
+      showToast("Sem registros pra exportar ainda.", "error");
+      return;
+    }
+    var showUnit = isMaster();
+    var header = ["Ação", "Código", "Quantidade", "Usuário", "Data/Hora"];
+    if(showUnit){ header.splice(3, 0, "Unidade"); }
+    var lines = [header.join(";")];
+    list.forEach(function(rec){
+      var row = [
+        rec.action === "criado" ? "Criado" : "Removido",
+        csvEscape(rec.code),
+        rec.qty,
+        csvEscape(rec.user),
+        formatWhen(rec.ts)
+      ];
+      if(showUnit){ row.splice(3, 0, csvEscape(rec.unitLabel || "")); }
+      lines.push(row.join(";"));
+    });
+    var csv = "﻿" + lines.join("\r\n");
+    try{
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "historico_" + (isMaster() ? "todas" : session.unit) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Arquivo exportado.");
+    }catch(e){
+      showToast("Exportação indisponível neste navegador.", "error");
+    }
+  });
 
   function setSyncStatus(state){
     el.syncStatus.classList.remove("syncing", "error");
@@ -2035,6 +2121,20 @@
   });
 
   var currentEntriesById = {};
+  var lastEntriesData = [];
+  var lastEntriesOpts = {};
+
+  function entriesSearchTerm(){
+    return (el.searchLancamentos.value || "").trim().toLowerCase();
+  }
+
+  function filterEntriesList(list, term){
+    if(!term){ return list; }
+    return list.filter(function(e){
+      return (e.code && e.code.toLowerCase().indexOf(term) !== -1) ||
+        (e.desc && e.desc.toLowerCase().indexOf(term) !== -1);
+    });
+  }
 
   function renderWithData(mine, opts){
     opts = opts || {};
@@ -2042,13 +2142,19 @@
     var groupByUnit = !!opts.groupByUnit;
 
     mine = mine.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+    lastEntriesData = mine;
+    lastEntriesOpts = opts;
     currentEntriesById = {};
 
     el.statCount.textContent = mine.length;
     el.statQty.textContent = mine.reduce(function(sum, e){ return sum + e.qty; }, 0);
 
+    var term = entriesSearchTerm();
+    var visible = filterEntriesList(mine, term);
+
     el.entryList.innerHTML = "";
-    if(mine.length === 0){
+    if(visible.length === 0){
+      el.listEmpty.textContent = term ? "Nenhum lançamento encontrado pra essa busca." : "Nenhum lançamento ainda. Adicione o primeiro item acima.";
       el.listEmpty.style.display = "block";
       return;
     }
@@ -2082,7 +2188,7 @@
 
     if(groupByUnit){
       ALL_UNITS.forEach(function(u){
-        var group = mine.filter(function(e){ return e.unit === u.unit; });
+        var group = visible.filter(function(e){ return e.unit === u.unit; });
         if(!group.length){ return; }
         var head = document.createElement("div");
         head.className = "entry-group-head";
@@ -2091,9 +2197,46 @@
         group.forEach(renderRow);
       });
     } else {
-      mine.forEach(renderRow);
+      visible.forEach(renderRow);
     }
   }
+
+  el.searchLancamentos.addEventListener("input", function(){
+    renderWithData(lastEntriesData, lastEntriesOpts);
+  });
+
+  el.btnExportLancamentos.addEventListener("click", function(){
+    var term = entriesSearchTerm();
+    var list = filterEntriesList(lastEntriesData, term);
+    if(!list.length){
+      showToast("Sem lançamentos pra exportar ainda.", "error");
+      return;
+    }
+    var showUnit = isMaster();
+    var header = ["Código", "Descrição", "Quantidade", "Data/Hora"];
+    if(showUnit){ header.splice(1, 0, "Unidade"); }
+    var lines = [header.join(";")];
+    list.forEach(function(e){
+      var row = [csvEscape(e.code), csvEscape(e.desc), e.qty, formatWhen(e.ts)];
+      if(showUnit){ row.splice(1, 0, csvEscape(e.unitLabel || "")); }
+      lines.push(row.join(";"));
+    });
+    var csv = "﻿" + lines.join("\r\n");
+    try{
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "lancamentos_" + (isMaster() ? "todas" : session.unit) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Arquivo exportado.");
+    }catch(e){
+      showToast("Exportação indisponível neste navegador.", "error");
+    }
+  });
 
   function fetchServerEntriesForUnit(unit, unitLabel){
     return fetchWithTimeout("/api/listar", {
