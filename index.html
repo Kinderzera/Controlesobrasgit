@@ -579,6 +579,11 @@
   }
   .history-badge.criado{ background:var(--success-soft); color:var(--success); }
   .history-badge.excluido{ background:var(--danger-soft); color:var(--danger); }
+  .ean-chip{
+    font-size:.66rem; font-weight:700; letter-spacing:.2px; font-variant-numeric:tabular-nums;
+    padding:3px 8px; border-radius:999px; flex-shrink:0;
+    background:var(--surface-2); color:var(--ink-muted);
+  }
   .history-top .del{
     width:28px; height:28px; border:none; background:none; color:var(--ink-muted);
     cursor:pointer; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center;
@@ -949,6 +954,51 @@
         </div>
       </div>
 
+      <div id="view-catalogo" class="tab-view">
+        <div class="card" id="card-catalogo-add">
+          <h2>Adicionar / atualizar item</h2>
+          <p class="card-caption">Cadastre um código novo (ou edite a descrição de um já existente) e, se o produto tiver código de barras, associe o EAN pra ele já vir pronto ao escanear.</p>
+          <form id="catalogo-form" novalidate>
+            <label class="field-label" for="input-catalogo-codigo">Código</label>
+            <div class="input-wrap">
+              <input id="input-catalogo-codigo" type="text" autocomplete="off">
+            </div>
+
+            <label class="field-label field-label-spaced" for="input-catalogo-desc">Descrição</label>
+            <div class="input-wrap">
+              <input id="input-catalogo-desc" type="text" autocomplete="off">
+            </div>
+
+            <label class="field-label field-label-spaced" for="input-catalogo-ean">EAN / código de barras (opcional — separe vários por vírgula)</label>
+            <div class="input-wrap">
+              <input id="input-catalogo-ean" type="text" autocomplete="off" inputmode="numeric">
+            </div>
+
+            <p id="catalogo-error" class="field-error">Preencha o código.</p>
+
+            <button type="submit" class="btn-primary" id="btn-catalogo-submit" style="margin-top:18px;">
+              SALVAR ITEM
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </button>
+          </form>
+        </div>
+
+        <div class="card list-card">
+          <div class="list-head">
+            <h2 style="margin:0;">Itens cadastrados</h2>
+            <span class="history-meta" id="catalogo-count">0 itens</span>
+          </div>
+          <div class="list-search-wrap">
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="input-search-catalogo" type="text" placeholder="Buscar por código, descrição ou EAN" autocomplete="off">
+            </div>
+          </div>
+          <div id="catalogo-empty" class="list-empty">Digite acima pra buscar um item.</div>
+          <div id="catalogo-list" class="entry-list-scroll"></div>
+        </div>
+      </div>
+
     </div>
 
     <nav class="tab-bar">
@@ -968,6 +1018,10 @@
       <button type="button" class="tab-btn hidden" id="tab-btn-usuarios" data-tab="usuarios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         <span>Painel DEV</span>
+      </button>
+      <button type="button" class="tab-btn hidden" id="tab-btn-catalogo" data-tab="catalogo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"></path><path d="M8 4v16"></path><path d="M12 4v16"></path><path d="M15 4v16"></path><path d="M19 4v16"></path></svg>
+        <span>Catálogo</span>
       </button>
 
       <div class="nav-profile">
@@ -1041,6 +1095,7 @@
   var ENTRIES_KEY = "sobras_entries_v1";
   var AUDIT_KEY = "sobras_audit_v1";
   var CATALOG_KEY = "sobras_catalog_v1";
+  var EAN_OVERRIDES_KEY = "sobras_ean_overrides_v1";
   var PENDING_DELETES_KEY = "sobras_pending_deletes_v1";
 
   // A URL do Power Automate agora fica só no servidor (variável de ambiente
@@ -1146,7 +1201,20 @@
     usuariosEmpty: document.getElementById("usuarios-empty"),
     usuariosList: document.getElementById("usuarios-list"),
     acessosEmpty: document.getElementById("acessos-empty"),
-    acessosList: document.getElementById("acessos-list")
+    acessosList: document.getElementById("acessos-list"),
+
+    tabBtnCatalogo: document.getElementById("tab-btn-catalogo"),
+    viewCatalogo: document.getElementById("view-catalogo"),
+    catalogoForm: document.getElementById("catalogo-form"),
+    inputCatalogoCodigo: document.getElementById("input-catalogo-codigo"),
+    inputCatalogoDesc: document.getElementById("input-catalogo-desc"),
+    inputCatalogoEan: document.getElementById("input-catalogo-ean"),
+    catalogoError: document.getElementById("catalogo-error"),
+    btnCatalogoSubmit: document.getElementById("btn-catalogo-submit"),
+    catalogoCount: document.getElementById("catalogo-count"),
+    searchCatalogo: document.getElementById("input-search-catalogo"),
+    catalogoEmpty: document.getElementById("catalogo-empty"),
+    catalogoList: document.getElementById("catalogo-list")
   };
 
   (function setupNavBrand(){
@@ -1179,6 +1247,7 @@
   var session = null;
   var toastTimer = null;
   var catalog = { items: {}, count: 0, updatedAt: null };
+  var eanMap = {};
 
   // Perfil "master" (Dev): enxerga Histórico e Painel combinando as duas
   // unidades, em vez de só a unidade em que ele está logado.
@@ -1894,6 +1963,40 @@
       });
   });
 
+  /* ---------------- catálogo (só perfil admin) ---------------- */
+
+  el.catalogoForm.addEventListener("submit", function(ev){
+    ev.preventDefault();
+
+    var code = el.inputCatalogoCodigo.value.trim().toUpperCase();
+    var desc = el.inputCatalogoDesc.value.trim();
+    var eanRaw = el.inputCatalogoEan.value.trim();
+
+    if(!code){
+      el.catalogoError.textContent = "Preencha o código.";
+      el.catalogoError.classList.add("show");
+      return;
+    }
+    el.catalogoError.classList.remove("show");
+
+    var eanList = eanRaw
+      ? eanRaw.split(/[,;\s]+/).map(function(s){ return s.trim(); }).filter(Boolean)
+      : [];
+
+    upsertCatalogItem(code, desc, eanList);
+
+    showToast('Item "' + code + '" salvo no catálogo.');
+    el.catalogoForm.reset();
+    el.inputCatalogoCodigo.focus();
+    refreshCatalogoList();
+  });
+
+  var catalogoSearchTimer = null;
+  el.searchCatalogo.addEventListener("input", function(){
+    clearTimeout(catalogoSearchTimer);
+    catalogoSearchTimer = setTimeout(refreshCatalogoList, 150);
+  });
+
   /* ---------------- painel (quantidade x valor) ---------------- */
 
   function formatMoney(v){
@@ -2490,13 +2593,124 @@
 
   function hasCode(key){ return Object.prototype.hasOwnProperty.call(catalog.items, key); }
 
+  /* ---------------- catálogo de EANs (admin, aba Catálogo) ---------------- */
+
+  function getEanOverrides(){
+    try{
+      var raw = localStorage.getItem(EAN_OVERRIDES_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === "object"){ return parsed; }
+      }
+    }catch(e){}
+    return {};
+  }
+
+  function loadEanMapFromStorage(){
+    eanMap = Object.assign({}, EAN_TO_SKU_DATA, getEanOverrides());
+  }
+
+  function addEanOverrides(pairs){
+    var overrides = getEanOverrides();
+    Object.assign(overrides, pairs);
+    localStorage.setItem(EAN_OVERRIDES_KEY, JSON.stringify(overrides));
+    Object.assign(eanMap, pairs);
+  }
+
+  function buildEansByCode(){
+    var map = {};
+    for(var ean in eanMap){
+      if(!Object.prototype.hasOwnProperty.call(eanMap, ean)) continue;
+      var code = eanMap[ean];
+      if(!map[code]){ map[code] = []; }
+      map[code].push(ean);
+    }
+    return map;
+  }
+
+  function upsertCatalogItem(code, desc, eanList){
+    catalog.items[code] = desc;
+    catalog.count = Object.keys(catalog.items).length;
+    catalog.updatedAt = new Date().toISOString();
+    saveCatalogToStorage();
+
+    if(eanList && eanList.length){
+      var pairs = {};
+      eanList.forEach(function(ean){ pairs[ean] = code; });
+      addEanOverrides(pairs);
+    }
+    revalidateAllRows();
+  }
+
+  function catalogSearchMatches(q){
+    q = q.toLowerCase();
+    var eansByCode = buildEansByCode();
+    var codes = Object.keys(catalog.items);
+    var matches = [];
+    for(var i=0;i<codes.length;i++){
+      var code = codes[i];
+      var desc = catalog.items[code] || "";
+      var eans = eansByCode[code] || [];
+      var haystack = (code + " " + desc + " " + eans.join(" ")).toLowerCase();
+      if(haystack.indexOf(q) !== -1){ matches.push({ code: code, desc: desc, eans: eans }); }
+    }
+    return matches;
+  }
+
+  var CATALOGO_MAX_RESULTS = 150;
+
+  function buildCatalogoRow(item){
+    var row = document.createElement("div");
+    row.className = "history-row";
+    var eansHtml = item.eans.length
+      ? item.eans.map(function(ean){ return '<span class="ean-chip">' + escapeHtml(ean) + '</span>'; }).join("")
+      : '<span class="history-meta">Sem EAN cadastrado</span>';
+    row.innerHTML =
+      '<div class="history-top"><span class="history-code"></span></div>' +
+      '<div class="history-meta"></div>' +
+      '<div class="history-top" style="flex-wrap:wrap;gap:6px;margin-top:2px;">' + eansHtml + '</div>';
+    row.querySelector(".history-code").textContent = item.code;
+    row.querySelector(".history-meta").textContent = item.desc || "(sem descrição)";
+    return row;
+  }
+
+  function refreshCatalogoList(){
+    var q = (el.searchCatalogo.value || "").trim();
+    el.catalogoCount.textContent = catalog.count + (catalog.count === 1 ? " item" : " itens");
+    el.catalogoList.innerHTML = "";
+
+    if(!q){
+      el.catalogoEmpty.style.display = "block";
+      el.catalogoEmpty.textContent = "Digite um código, descrição ou EAN acima pra buscar.";
+      return;
+    }
+
+    var matches = catalogSearchMatches(q);
+    if(!matches.length){
+      el.catalogoEmpty.style.display = "block";
+      el.catalogoEmpty.textContent = "Nenhum item encontrado.";
+      return;
+    }
+
+    el.catalogoEmpty.style.display = "none";
+    var shown = matches.slice(0, CATALOGO_MAX_RESULTS);
+    shown.forEach(function(item){ el.catalogoList.appendChild(buildCatalogoRow(item)); });
+    if(matches.length > shown.length){
+      var note = document.createElement("div");
+      note.className = "history-meta";
+      note.style.padding = "10px 16px";
+      note.textContent = "Mostrando " + shown.length + " de " + matches.length + " resultados — refine a busca pra ver os demais.";
+      el.catalogoList.appendChild(note);
+    }
+  }
+
   /* ---------------- scanner de código de barras (EAN) ---------------- */
 
   function resolveScannedCode(raw){
     var text = String(raw || "").trim();
     if(!text){ return ""; }
-    if(Object.prototype.hasOwnProperty.call(EAN_TO_SKU_DATA, text)){
-      return EAN_TO_SKU_DATA[text];
+    if(Object.prototype.hasOwnProperty.call(eanMap, text)){
+      return eanMap[text];
     }
     // Alguns produtos têm o próprio código impresso em barras (não um EAN) —
     // se bater direto com um item da lista, usa ele assim mesmo.
@@ -2916,6 +3130,9 @@
     if(el.tabBtnUsuarios){
       el.tabBtnUsuarios.classList.toggle("hidden", !(session && session.role === "admin"));
     }
+    if(el.tabBtnCatalogo){
+      el.tabBtnCatalogo.classList.toggle("hidden", !(session && session.role === "admin"));
+    }
     if(isMaster()){
       el.unitChip.className = "unit-chip admin";
       el.unitChipLabel.textContent = "ADMIN";
@@ -2945,7 +3162,7 @@
     }
   }
 
-  var TAB_TITLES = { lancar: "Registrar sobras", historico: "Histórico", painel: "Painel", usuarios: "Painel DEV" };
+  var TAB_TITLES = { lancar: "Registrar sobras", historico: "Histórico", painel: "Painel", usuarios: "Painel DEV", catalogo: "Catálogo" };
 
   function switchTab(name){
     el.topbarTitle.textContent = TAB_TITLES[name] || "";
@@ -2953,6 +3170,7 @@
     el.viewHistorico.classList.toggle("active", name === "historico");
     el.viewPainel.classList.toggle("active", name === "painel");
     el.viewUsuarios.classList.toggle("active", name === "usuarios");
+    el.viewCatalogo.classList.toggle("active", name === "catalogo");
     el.tabButtons.forEach(function(btn){
       btn.classList.toggle("active", btn.dataset.tab === name);
     });
@@ -2961,6 +3179,7 @@
     if(name === "historico"){ refreshHistory(); }
     else if(name === "painel"){ refreshPainel(); }
     else if(name === "usuarios"){ refreshUsuarios(); refreshAcessos(); }
+    else if(name === "catalogo"){ refreshCatalogoList(); }
     else if(name === "lancar"){ refreshAndRender(); }
   }
 
@@ -3271,6 +3490,7 @@
 
   (function init(){
     loadCatalogFromStorage();
+    loadEanMapFromStorage();
     tryAutoFetchCatalog();
 
     var s = loadSession();
