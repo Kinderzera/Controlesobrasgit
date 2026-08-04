@@ -870,6 +870,12 @@
             <h2 style="margin:0;">Produtos em sobra</h2>
             <button type="button" class="btn-compact" id="btn-export-panel">Exportar CSV</button>
           </div>
+          <div class="list-search-wrap">
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="input-search-painel" type="text" placeholder="Buscar por código ou descrição" autocomplete="off">
+            </div>
+          </div>
           <div id="panel-empty" class="list-empty">Nenhum produto lançado ainda.</div>
           <div id="panel-table-wrap" class="table-scroll" style="display:none;">
             <table class="panel-table">
@@ -1089,6 +1095,7 @@
     panelQty: document.getElementById("panel-qty"),
     panelValor: document.getElementById("panel-valor"),
     panelEmpty: document.getElementById("panel-empty"),
+    searchPainel: document.getElementById("input-search-painel"),
     panelTableWrap: document.getElementById("panel-table-wrap"),
     panelTableBody: document.getElementById("panel-table-body"),
     monthlyEmpty: document.getElementById("monthly-empty"),
@@ -1914,6 +1921,18 @@
 
   var lastPainelData = [];
 
+  function painelSearchTerm(){
+    return (el.searchPainel.value || "").trim().toLowerCase();
+  }
+
+  function filterPainelList(list, term){
+    if(!term){ return list; }
+    return list.filter(function(row){
+      return (row.code && row.code.toLowerCase().indexOf(term) !== -1) ||
+        (row.desc && row.desc.toLowerCase().indexOf(term) !== -1);
+    });
+  }
+
   function renderPainel(list){
     lastPainelData = list;
     var totalQty = list.reduce(function(s,r){ return s + r.qty; }, 0);
@@ -1923,14 +1942,18 @@
     el.panelQty.textContent = totalQty;
     el.panelValor.textContent = formatMoney(totalValor);
 
+    var term = painelSearchTerm();
+    var visible = filterPainelList(list, term);
+
     el.panelTableBody.innerHTML = "";
-    if(list.length === 0){
+    if(visible.length === 0){
+      el.panelEmpty.textContent = term ? "Nenhum produto encontrado pra essa busca." : "Nenhum produto lançado ainda.";
       el.panelEmpty.style.display = "block";
       el.panelTableWrap.style.display = "none";
     } else {
       el.panelEmpty.style.display = "none";
       el.panelTableWrap.style.display = "block";
-      list.forEach(function(row){
+      visible.forEach(function(row){
         var tr = document.createElement("tr");
         tr.innerHTML =
           '<td class="pn-code"></td>' +
@@ -1947,6 +1970,10 @@
       });
     }
   }
+
+  el.searchPainel.addEventListener("input", function(){
+    renderPainel(lastPainelData);
+  });
 
   function refreshPainel(){
     if(isMaster()){
@@ -2089,12 +2116,13 @@
   }
 
   el.btnExportPanel.addEventListener("click", function(){
-    if(!lastPainelData.length){
+    var list = filterPainelList(lastPainelData, painelSearchTerm());
+    if(!list.length){
       showToast("Sem produtos pra exportar ainda.", "error");
       return;
     }
     var lines = ["Código;Descrição;Quantidade;ValorUnitário;ValorTotal"];
-    lastPainelData.forEach(function(row){
+    list.forEach(function(row){
       lines.push([
         csvEscape(row.code),
         csvEscape(row.desc),
