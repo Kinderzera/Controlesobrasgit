@@ -2651,6 +2651,7 @@
       var code = codes[i];
       var desc = catalog.items[code] || "";
       var eans = eansByCode[code] || [];
+      if(!eans.length){ continue; }
       var haystack = (code + " " + desc + " " + eans.join(" ")).toLowerCase();
       if(!q || haystack.indexOf(q) !== -1){ matches.push({ code: code, desc: desc, eans: eans }); }
     }
@@ -2662,9 +2663,7 @@
   function buildCatalogoRow(item){
     var row = document.createElement("div");
     row.className = "history-row";
-    var eansHtml = item.eans.length
-      ? item.eans.map(function(ean){ return '<span class="ean-chip">' + escapeHtml(ean) + '</span>'; }).join("")
-      : '<span class="history-meta">Sem EAN cadastrado</span>';
+    var eansHtml = item.eans.map(function(ean){ return '<span class="ean-chip">' + escapeHtml(ean) + '</span>'; }).join("");
     row.innerHTML =
       '<div class="history-top"><span class="history-code"></span></div>' +
       '<div class="history-meta"></div>' +
@@ -2676,13 +2675,14 @@
 
   function refreshCatalogoList(){
     var q = (el.searchCatalogo.value || "").trim();
-    el.catalogoCount.textContent = catalog.count + (catalog.count === 1 ? " item" : " itens");
     el.catalogoList.innerHTML = "";
 
     var matches = catalogSearchMatches(q);
+    el.catalogoCount.textContent = matches.length + (matches.length === 1 ? " item com EAN" : " itens com EAN");
+
     if(!matches.length){
       el.catalogoEmpty.style.display = "block";
-      el.catalogoEmpty.textContent = q ? "Nenhum item encontrado." : "Nenhum item cadastrado ainda.";
+      el.catalogoEmpty.textContent = q ? "Nenhum item encontrado." : "Nenhum item com EAN cadastrado ainda.";
       return;
     }
 
