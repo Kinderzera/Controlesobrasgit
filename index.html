@@ -994,7 +994,7 @@
               <input id="input-search-catalogo" type="text" placeholder="Buscar por código, descrição ou EAN" autocomplete="off">
             </div>
           </div>
-          <div id="catalogo-empty" class="list-empty">Digite acima pra buscar um item.</div>
+          <div id="catalogo-empty" class="list-empty">Carregando itens...</div>
           <div id="catalogo-list" class="entry-list-scroll"></div>
         </div>
       </div>
@@ -2645,14 +2645,14 @@
   function catalogSearchMatches(q){
     q = q.toLowerCase();
     var eansByCode = buildEansByCode();
-    var codes = Object.keys(catalog.items);
+    var codes = Object.keys(catalog.items).sort();
     var matches = [];
     for(var i=0;i<codes.length;i++){
       var code = codes[i];
       var desc = catalog.items[code] || "";
       var eans = eansByCode[code] || [];
       var haystack = (code + " " + desc + " " + eans.join(" ")).toLowerCase();
-      if(haystack.indexOf(q) !== -1){ matches.push({ code: code, desc: desc, eans: eans }); }
+      if(!q || haystack.indexOf(q) !== -1){ matches.push({ code: code, desc: desc, eans: eans }); }
     }
     return matches;
   }
@@ -2679,16 +2679,10 @@
     el.catalogoCount.textContent = catalog.count + (catalog.count === 1 ? " item" : " itens");
     el.catalogoList.innerHTML = "";
 
-    if(!q){
-      el.catalogoEmpty.style.display = "block";
-      el.catalogoEmpty.textContent = "Digite um código, descrição ou EAN acima pra buscar.";
-      return;
-    }
-
     var matches = catalogSearchMatches(q);
     if(!matches.length){
       el.catalogoEmpty.style.display = "block";
-      el.catalogoEmpty.textContent = "Nenhum item encontrado.";
+      el.catalogoEmpty.textContent = q ? "Nenhum item encontrado." : "Nenhum item cadastrado ainda.";
       return;
     }
 
@@ -2699,7 +2693,9 @@
       var note = document.createElement("div");
       note.className = "history-meta";
       note.style.padding = "10px 16px";
-      note.textContent = "Mostrando " + shown.length + " de " + matches.length + " resultados — refine a busca pra ver os demais.";
+      note.textContent = q
+        ? ("Mostrando " + shown.length + " de " + matches.length + " resultados — refine a busca pra ver os demais.")
+        : ("Mostrando " + shown.length + " de " + matches.length + " itens — use a busca pra encontrar um item específico.");
       el.catalogoList.appendChild(note);
     }
   }
