@@ -138,9 +138,13 @@
   .serie-scan-btn svg{ width:15px; height:15px; }
   .serie-chips{ display:flex; flex-wrap:wrap; gap:4px; max-height:110px; overflow-y:auto; }
   .serie-chip{
-    display:inline-flex; align-items:center; gap:3px; background:var(--surface-2); border:1px solid var(--border);
-    border-radius:999px; padding:3px 3px 3px 9px; font-size:.68rem; color:var(--ink); max-width:160px;
+    display:inline-flex; align-items:center; gap:5px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:999px; padding:3px 3px 3px 8px; font-size:.68rem; color:var(--ink); max-width:170px;
   }
+  .serie-chip-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--ink-muted); flex-shrink:0;
+  }
+  .serie-chip.synced .serie-chip-dot{ background:var(--success); }
   .serie-chip-code{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .serie-chip-remove{
     background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:.85rem;
@@ -3171,11 +3175,19 @@
     return (n && n > 0) ? n : 1;
   }
 
-  // Planilhas salvas por uma versão anterior deste app guardavam um único
-  // código escaneado por linha (row.scanned, string) — migra pra lista.
+  // Cada código escaneado agora é um objeto { code, spId, ts } — spId fica
+  // vazio até o registro ser confirmado no SharePoint (mesma convenção de
+  // "spId" já usada nos lançamentos de sobras). Migra formatos salvos por
+  // versões anteriores: row.scanned (1 código, string) e scannedList como
+  // lista de strings (sem controle de sincronização).
   function migrateSerieRow(row, qtyHeader){
     if(!Array.isArray(row.scannedList)){
-      row.scannedList = row.scanned ? [row.scanned] : [];
+      row.scannedList = row.scanned ? [{ code: row.scanned, spId: null, ts: null }] : [];
+    } else {
+      row.scannedList = row.scannedList.map(function(item){
+        if(typeof item === "string"){ return { code: item, spId: null, ts: null }; }
+        return item;
+      });
     }
     delete row.scanned;
     if(!row.qty || row.qty < 1){
@@ -3198,6 +3210,71 @@
 
   function refreshSerieScreen(){
     renderSerieUI();
+    retrySerieSyncs();
+  }
+
+  /* ---- sincronização dos códigos escaneados com o SharePoint (best-effort, mesmo padrão do resto do app) ---- */
+
+  var serieInFlightSyncKeys = {};
+
+  function syncSerieCodeEntry(row, entry){
+    var key = row.id + "::" + entry.code;
+    if(serieInFlightSyncKeys[key]){ return Promise.resolve(false); }
+    serieInFlightSyncKeys[key] = true;
+    var payload = {
+      planilha: serie.fileName || "",
+      dadosLinha: JSON.stringify(row.cells || {}),
+      codigoSerie: entry.code,
+      usuario: session ? session.username : "",
+      unidade: session ? session.unitLabel : "",
+      dataHora: entry.ts || new Date().toISOString()
+    };
+    return fetch("/api/serieScan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function(resp){
+      return resp.ok ? resp.json().catch(function(){ return null; }) : null;
+    }).then(function(data){
+      if(data && data.id){
+        entry.spId = data.id;
+        saveSerieToStorage();
+        return true;
+      }
+      return false;
+    }).catch(function(){ return false; })
+      .finally(function(){ delete serieInFlightSyncKeys[key]; });
+  }
+
+  var serieSyncRetryBusy = false;
+  var serieSyncRetryLastRun = 0;
+  var SERIE_SYNC_RETRY_COOLDOWN_MS = 30000;
+
+  function retrySerieSyncs(){
+    if(serieSyncRetryBusy){ return; }
+    var now = Date.now();
+    if(now - serieSyncRetryLastRun < SERIE_SYNC_RETRY_COOLDOWN_MS){ return; }
+
+    var pending = [];
+    serie.rows.forEach(function(row){
+      (row.scannedList || []).forEach(function(entry){
+        if(!entry.spId){ pending.push({ row: row, entry: entry }); }
+      });
+    });
+    if(!pending.length){ return; }
+
+    serieSyncRetryLastRun = now;
+    serieSyncRetryBusy = true;
+    // Um de cada vez, não em paralelo — mesmo motivo dos outros fluxos: o
+    // Flow do SharePoint derruba com 503 se levar várias chamadas juntas.
+    var chain = Promise.resolve();
+    pending.forEach(function(p){
+      chain = chain.then(function(){ return syncSerieCodeEntry(p.row, p.entry); });
+    });
+    chain.then(function(){
+      serieSyncRetryBusy = false;
+      renderSerieUI();
+    }).catch(function(){ serieSyncRetryBusy = false; });
   }
 
   function importSerieRows(fileName, rowsAoa){
@@ -3280,7 +3357,7 @@
     var term = (el.serieSearch.value || "").trim().toLowerCase();
     if(!term){ return serie.rows; }
     return serie.rows.filter(function(row){
-      if((row.scannedList || []).some(function(c){ return c.toLowerCase().indexOf(term) !== -1; })){ return true; }
+      if((row.scannedList || []).some(function(e){ return e.code.toLowerCase().indexOf(term) !== -1; })){ return true; }
       return serie.headers.some(function(h){
         return String(row.cells[h] || "").toLowerCase().indexOf(term) !== -1;
       });
@@ -3357,23 +3434,31 @@
       if(list.length){
         var chips = document.createElement("div");
         chips.className = "serie-chips";
-        list.forEach(function(code, idx){
+        list.forEach(function(entry, idx){
           var chip = document.createElement("span");
-          chip.className = "serie-chip";
+          chip.className = "serie-chip" + (entry.spId ? " synced" : "");
+          var dot = document.createElement("span");
+          dot.className = "serie-chip-dot";
+          dot.title = entry.spId ? "Sincronizado com o SharePoint" : "Ainda não sincronizado";
           var codeSpan = document.createElement("span");
           codeSpan.className = "serie-chip-code";
-          codeSpan.textContent = code;
-          codeSpan.title = code;
+          codeSpan.textContent = entry.code;
+          codeSpan.title = entry.code;
           var removeBtn = document.createElement("button");
           removeBtn.type = "button";
           removeBtn.className = "serie-chip-remove";
           removeBtn.setAttribute("aria-label", "Remover código escaneado");
           removeBtn.textContent = "×";
           removeBtn.addEventListener("click", function(){
+            var wasSynced = !!entry.spId;
             list.splice(idx, 1);
             saveSerieToStorage();
             renderSerieUI();
+            if(wasSynced){
+              showToast("Removido daqui, mas o registro já enviado ao SharePoint continua lá.", "error");
+            }
           });
+          chip.appendChild(dot);
           chip.appendChild(codeSpan);
           chip.appendChild(removeBtn);
           chips.appendChild(chip);
@@ -3408,17 +3493,19 @@
         var code = String(decodedText || "").trim();
         if(!code){ return; }
 
-        if(row.scannedList.indexOf(code) !== -1){
+        if(row.scannedList.some(function(e){ return e.code === code; })){
           serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
           showToast("Esse código já foi escaneado nesta linha.", "error");
           return;
         }
 
-        row.scannedList.push(code);
+        var entry = { code: code, spId: null, ts: new Date().toISOString() };
+        row.scannedList.push(entry);
         serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
         saveSerieToStorage();
         playScanBeep();
         renderSerieUI();
+        syncSerieCodeEntry(row, entry).then(function(){ renderSerieUI(); });
 
         var qty = row.qty || 1;
         if(row.scannedList.length >= qty){
@@ -3469,13 +3556,13 @@
       // linha da planilha com Quantidade=23 e 23 leituras vira 23 linhas no
       // export, uma por número de série. Linhas sem nenhum escaneamento ainda
       // saem como uma linha só, com a coluna de série em branco.
-      var aoa = [serie.headers.concat(["Quantidade esperada", "Número de série"])];
+      var aoa = [serie.headers.concat(["Quantidade esperada", "Número de série", "Sincronizado no SharePoint"])];
       serie.rows.forEach(function(row){
         var base = serie.headers.map(function(h){ return row.cells[h] || ""; });
         var qty = row.qty || 1;
-        var codes = (row.scannedList && row.scannedList.length) ? row.scannedList : [""];
-        codes.forEach(function(code){
-          aoa.push(base.concat([qty, code]));
+        var list = (row.scannedList && row.scannedList.length) ? row.scannedList : [{ code: "", spId: null }];
+        list.forEach(function(entry){
+          aoa.push(base.concat([qty, entry.code || "", entry.spId ? "Sim" : "Não"]));
         });
       });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
