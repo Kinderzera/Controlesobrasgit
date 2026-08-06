@@ -125,11 +125,6 @@
     background:var(--surface-2); color:var(--ink-muted); white-space:nowrap;
   }
   .serie-progress-badge.done{ background:var(--success-soft); color:var(--success); }
-  .serie-qty-edit{ display:inline-flex; align-items:center; gap:4px; font-size:.68rem; color:var(--ink-muted); }
-  .serie-qty-input{
-    width:48px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
-    color:var(--ink); font-size:.75rem; padding:4px 6px; text-align:center;
-  }
   .serie-scan-btn{
     display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent);
     border:none; border-radius:var(--radius-sm); padding:7px 10px; font-size:.75rem; font-weight:700;
@@ -3351,25 +3346,53 @@
     var codeHeader = detectCodeColumn(headers);
     var descHeader = detectDescColumn(headers);
 
-    var rows = [];
+    // Lê cada linha da planilha primeiro, sem virar linha do app ainda —
+    // precisa agrupar por código do item antes (mesma peça pode aparecer em
+    // várias posições/linhas na planilha; no app isso vira 1 linha só, com
+    // as quantidades somadas, não uma linha repetida por posição).
+    var rawRowsList = [];
     for(var r = 1; r < rowsAoa.length; r++){
       var raw = rowsAoa[r] || [];
       var isEmpty = raw.every(function(v){ return String(v === undefined || v === null ? "" : v).trim() === ""; });
       if(isEmpty) continue;
-      (function(){
-        var cells = {};
-        headers.forEach(function(h, i){
-          var v = raw[i];
-          cells[h] = (v === undefined || v === null) ? "" : String(v);
-        });
-        rows.push({
-          id: "sr_" + r + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-          cells: cells,
-          scannedList: [],
-          qty: qtyHeader ? parseQty(cells[qtyHeader]) : 1
-        });
-      })();
+      var cells = {};
+      headers.forEach(function(h, i){
+        var v = raw[i];
+        cells[h] = (v === undefined || v === null) ? "" : String(v);
+      });
+      rawRowsList.push(cells);
     }
+
+    var groups = [];
+    var groupIndexByKey = {};
+    rawRowsList.forEach(function(cells){
+      var key = codeHeader ? String(cells[codeHeader] || "").trim().toUpperCase() : "";
+      if(key && Object.prototype.hasOwnProperty.call(groupIndexByKey, key)){
+        groups[groupIndexByKey[key]].push(cells);
+      } else {
+        if(key){ groupIndexByKey[key] = groups.length; }
+        groups.push([cells]);
+      }
+    });
+
+    var rows = groups.map(function(groupCells, idx){
+      var merged = {};
+      headers.forEach(function(h){
+        var values = groupCells.map(function(c){ return c[h] || ""; }).filter(Boolean);
+        var unique = values.filter(function(v, i){ return values.indexOf(v) === i; });
+        merged[h] = unique.join(" / ");
+      });
+      var qty = qtyHeader
+        ? groupCells.reduce(function(sum, c){ return sum + parseQty(c[qtyHeader]); }, 0)
+        : groupCells.length;
+      if(qtyHeader){ merged[qtyHeader] = String(qty); }
+      return {
+        id: "sr_" + idx + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        cells: merged,
+        scannedList: [],
+        qty: qty || 1
+      };
+    });
 
     if(!rows.length){
       showToast("Nenhuma linha de dados encontrada nessa planilha.", "error");
@@ -3534,22 +3557,6 @@
       badge.className = "serie-progress-badge" + (done ? " done" : "");
       badge.textContent = list.length + "/" + qty;
       progressRow.appendChild(badge);
-
-      var qtyLabel = document.createElement("label");
-      qtyLabel.className = "serie-qty-edit";
-      qtyLabel.textContent = "Qtd:";
-      var qtyInput = document.createElement("input");
-      qtyInput.type = "number";
-      qtyInput.min = "1";
-      qtyInput.className = "serie-qty-input";
-      qtyInput.value = String(qty);
-      qtyInput.addEventListener("change", function(){
-        row.qty = parseQty(qtyInput.value);
-        saveSerieToStorage();
-        renderSerieUI();
-      });
-      qtyLabel.appendChild(qtyInput);
-      progressRow.appendChild(qtyLabel);
 
       var btn = document.createElement("button");
       btn.type = "button";
