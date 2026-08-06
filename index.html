@@ -116,21 +116,37 @@
   .serie-result.show{ display:flex; }
   .serie-summary{ display:flex; gap:10px; flex-wrap:wrap; }
   .serie-table-wrap{ flex:1; min-height:0; }
-  .panel-table td.serie-scan-cell{ white-space:nowrap; }
   .panel-table tbody tr.serie-row-done{ background:var(--success-soft); }
+  .panel-table td.serie-scan-cell{ white-space:normal; min-width:230px; vertical-align:top; }
+  .serie-cell{ display:flex; flex-direction:column; gap:8px; }
+  .serie-progress-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .serie-progress-badge{
+    font-size:.72rem; font-weight:800; padding:3px 9px; border-radius:999px;
+    background:var(--surface-2); color:var(--ink-muted); white-space:nowrap;
+  }
+  .serie-progress-badge.done{ background:var(--success-soft); color:var(--success); }
+  .serie-qty-edit{ display:inline-flex; align-items:center; gap:4px; font-size:.68rem; color:var(--ink-muted); }
+  .serie-qty-input{
+    width:48px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+    color:var(--ink); font-size:.75rem; padding:4px 6px; text-align:center;
+  }
   .serie-scan-btn{
     display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent);
     border:none; border-radius:var(--radius-sm); padding:7px 10px; font-size:.75rem; font-weight:700;
-    cursor:pointer; white-space:nowrap;
+    cursor:pointer; white-space:nowrap; align-self:flex-start;
   }
   .serie-scan-btn svg{ width:15px; height:15px; }
-  .serie-scanned{ display:inline-flex; align-items:center; gap:8px; }
-  .serie-scanned-value{ font-weight:700; color:var(--success); }
-  .serie-rescan-btn{
-    background:none; border:none; color:var(--ink-muted); cursor:pointer; padding:2px;
-    display:inline-flex; flex-shrink:0;
+  .serie-chips{ display:flex; flex-wrap:wrap; gap:4px; max-height:110px; overflow-y:auto; }
+  .serie-chip{
+    display:inline-flex; align-items:center; gap:3px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:999px; padding:3px 3px 3px 9px; font-size:.68rem; color:var(--ink); max-width:160px;
   }
-  .serie-rescan-btn svg{ width:15px; height:15px; }
+  .serie-chip-code{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .serie-chip-remove{
+    background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:.85rem;
+    line-height:1; padding:2px 5px; flex-shrink:0;
+  }
+  .serie-chip-remove:hover{ color:var(--danger); }
   @media (min-width:900px){ .serie-wrap{ max-width:1100px; padding:24px; margin:0 auto; } }
 
   /* ---- login ---- */
@@ -1174,7 +1190,11 @@
           </div>
           <div class="stat-box">
             <span class="stat-value" id="serie-stat-done">0</span>
-            <span class="stat-label">Já escaneadas</span>
+            <span class="stat-label">Linhas completas</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value" id="serie-stat-units">0/0</span>
+            <span class="stat-label">Unidades escaneadas</span>
           </div>
         </div>
 
@@ -1295,6 +1315,7 @@
     serieResult: document.getElementById("serie-result"),
     serieStatTotal: document.getElementById("serie-stat-total"),
     serieStatDone: document.getElementById("serie-stat-done"),
+    serieStatUnits: document.getElementById("serie-stat-units"),
     serieFileName: document.getElementById("serie-file-name"),
     btnSerieExport: document.getElementById("btn-serie-export"),
     btnSerieReset: document.getElementById("btn-serie-reset"),
@@ -3126,12 +3147,52 @@
     try{ localStorage.setItem(SERIE_STORAGE_KEY, JSON.stringify(serie)); }catch(e){}
   }
 
+  // Detecta qual coluna da planilha representa a quantidade de unidades de
+  // cada linha (ex.: "Quantidade", "Qtd") pra saber quantos códigos de série
+  // diferentes precisam ser escaneados naquela linha — um produto com 23
+  // unidades exige 23 leituras de código de barras distintas, não 1.
+  function normalizeHeaderText(s){
+    return String(s || "").toLowerCase().trim();
+  }
+
+  function detectQtyColumn(headers){
+    var keywords = ["quantidade", "quant", "qtde", "qtd", "quantity", "qty"];
+    for(var i = 0; i < headers.length; i++){
+      var norm = normalizeHeaderText(headers[i]);
+      for(var k = 0; k < keywords.length; k++){
+        if(norm.indexOf(keywords[k]) !== -1){ return headers[i]; }
+      }
+    }
+    return null;
+  }
+
+  function parseQty(value){
+    var n = parseInt(String(value || "").replace(/[^\d-]/g, ""), 10);
+    return (n && n > 0) ? n : 1;
+  }
+
+  // Planilhas salvas por uma versão anterior deste app guardavam um único
+  // código escaneado por linha (row.scanned, string) — migra pra lista.
+  function migrateSerieRow(row, qtyHeader){
+    if(!Array.isArray(row.scannedList)){
+      row.scannedList = row.scanned ? [row.scanned] : [];
+    }
+    delete row.scanned;
+    if(!row.qty || row.qty < 1){
+      row.qty = qtyHeader ? parseQty(row.cells[qtyHeader]) : 1;
+    }
+  }
+
   function loadSerieFromStorage(){
     try{
       var raw = localStorage.getItem(SERIE_STORAGE_KEY);
       if(!raw) return;
       var parsed = JSON.parse(raw);
-      if(parsed && Array.isArray(parsed.headers) && Array.isArray(parsed.rows)){ serie = parsed; }
+      if(parsed && Array.isArray(parsed.headers) && Array.isArray(parsed.rows)){
+        var qtyHeader = detectQtyColumn(parsed.headers);
+        parsed.rows.forEach(function(row){ migrateSerieRow(row, qtyHeader); });
+        serie = parsed;
+      }
     }catch(e){}
   }
 
@@ -3156,6 +3217,7 @@
       }
       return label;
     });
+    var qtyHeader = detectQtyColumn(headers);
 
     var rows = [];
     for(var r = 1; r < rowsAoa.length; r++){
@@ -3168,7 +3230,12 @@
           var v = raw[i];
           cells[h] = (v === undefined || v === null) ? "" : String(v);
         });
-        rows.push({ id: "sr_" + r + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7), cells: cells, scanned: "" });
+        rows.push({
+          id: "sr_" + r + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+          cells: cells,
+          scannedList: [],
+          qty: qtyHeader ? parseQty(cells[qtyHeader]) : 1
+        });
       })();
     }
 
@@ -3180,7 +3247,8 @@
     serie = { fileName: fileName, headers: headers, rows: rows };
     saveSerieToStorage();
     renderSerieUI();
-    showToast(rows.length + (rows.length === 1 ? " linha importada." : " linhas importadas."));
+    var qtyNote = qtyHeader ? (" Quantidade detectada pela coluna \"" + qtyHeader + "\".") : "";
+    showToast(rows.length + (rows.length === 1 ? " linha importada." : " linhas importadas.") + qtyNote);
   }
 
   function renderSerieUI(){
@@ -3193,9 +3261,17 @@
     el.serieResult.classList.add("show");
     el.serieFileName.textContent = serie.fileName || "Planilha importada";
 
-    var doneCount = serie.rows.filter(function(r){ return !!r.scanned; }).length;
+    var doneRows = 0, scannedUnits = 0, expectedUnits = 0;
+    serie.rows.forEach(function(row){
+      var qty = row.qty || 1;
+      var count = (row.scannedList || []).length;
+      expectedUnits += qty;
+      scannedUnits += count;
+      if(count >= qty){ doneRows++; }
+    });
     el.serieStatTotal.textContent = String(serie.rows.length);
-    el.serieStatDone.textContent = String(doneCount);
+    el.serieStatDone.textContent = String(doneRows);
+    el.serieStatUnits.textContent = scannedUnits + "/" + expectedUnits;
 
     renderSerieTable();
   }
@@ -3204,7 +3280,7 @@
     var term = (el.serieSearch.value || "").trim().toLowerCase();
     if(!term){ return serie.rows; }
     return serie.rows.filter(function(row){
-      if(row.scanned && row.scanned.toLowerCase().indexOf(term) !== -1){ return true; }
+      if((row.scannedList || []).some(function(c){ return c.toLowerCase().indexOf(term) !== -1; })){ return true; }
       return serie.headers.some(function(h){
         return String(row.cells[h] || "").toLowerCase().indexOf(term) !== -1;
       });
@@ -3212,7 +3288,6 @@
   }
 
   var SCAN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1"></rect><line x1="7" y1="7" x2="7" y2="17"></line><line x1="10" y1="7" x2="10" y2="17"></line><line x1="15" y1="7" x2="15" y2="17"></line><line x1="18" y1="7" x2="18" y2="17"></line></svg>';
-  var RESCAN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
 
   function renderSerieTable(){
     el.serieTableHead.innerHTML = "";
@@ -3222,13 +3297,17 @@
       el.serieTableHead.appendChild(th);
     });
     var thScan = document.createElement("th");
-    thScan.textContent = "Código de série";
+    thScan.textContent = "Números de série";
     el.serieTableHead.appendChild(thScan);
 
     el.serieTableBody.innerHTML = "";
     serieFilteredRows().forEach(function(row){
+      var qty = row.qty || 1;
+      var list = row.scannedList || [];
+      var done = list.length >= qty;
+
       var tr = document.createElement("tr");
-      if(row.scanned){ tr.classList.add("serie-row-done"); }
+      if(done){ tr.classList.add("serie-row-done"); }
 
       serie.headers.forEach(function(h){
         var td = document.createElement("td");
@@ -3238,47 +3317,116 @@
 
       var tdScan = document.createElement("td");
       tdScan.className = "serie-scan-cell";
-      if(row.scanned){
-        var wrap = document.createElement("span");
-        wrap.className = "serie-scanned";
-        var val = document.createElement("span");
-        val.className = "serie-scanned-value";
-        val.textContent = row.scanned;
-        var rescan = document.createElement("button");
-        rescan.type = "button";
-        rescan.className = "serie-rescan-btn";
-        rescan.title = "Escanear de novo";
-        rescan.setAttribute("aria-label", "Escanear de novo");
-        rescan.innerHTML = RESCAN_ICON_SVG;
-        rescan.addEventListener("click", function(){ ensureBeepContext(); scanSerieRow(row); });
-        wrap.appendChild(val);
-        wrap.appendChild(rescan);
-        tdScan.appendChild(wrap);
-      } else {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "serie-scan-btn";
-        btn.innerHTML = SCAN_ICON_SVG + " Escanear";
-        btn.addEventListener("click", function(){ ensureBeepContext(); scanSerieRow(row); });
-        tdScan.appendChild(btn);
+
+      var cellWrap = document.createElement("div");
+      cellWrap.className = "serie-cell";
+
+      var progressRow = document.createElement("div");
+      progressRow.className = "serie-progress-row";
+
+      var badge = document.createElement("span");
+      badge.className = "serie-progress-badge" + (done ? " done" : "");
+      badge.textContent = list.length + "/" + qty;
+      progressRow.appendChild(badge);
+
+      var qtyLabel = document.createElement("label");
+      qtyLabel.className = "serie-qty-edit";
+      qtyLabel.textContent = "Qtd:";
+      var qtyInput = document.createElement("input");
+      qtyInput.type = "number";
+      qtyInput.min = "1";
+      qtyInput.className = "serie-qty-input";
+      qtyInput.value = String(qty);
+      qtyInput.addEventListener("change", function(){
+        row.qty = parseQty(qtyInput.value);
+        saveSerieToStorage();
+        renderSerieUI();
+      });
+      qtyLabel.appendChild(qtyInput);
+      progressRow.appendChild(qtyLabel);
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "serie-scan-btn";
+      btn.innerHTML = SCAN_ICON_SVG + " " + (list.length ? "Continuar escaneando" : "Escanear");
+      btn.addEventListener("click", function(){ ensureBeepContext(); scanSerieRow(row); });
+      progressRow.appendChild(btn);
+
+      cellWrap.appendChild(progressRow);
+
+      if(list.length){
+        var chips = document.createElement("div");
+        chips.className = "serie-chips";
+        list.forEach(function(code, idx){
+          var chip = document.createElement("span");
+          chip.className = "serie-chip";
+          var codeSpan = document.createElement("span");
+          codeSpan.className = "serie-chip-code";
+          codeSpan.textContent = code;
+          codeSpan.title = code;
+          var removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "serie-chip-remove";
+          removeBtn.setAttribute("aria-label", "Remover código escaneado");
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", function(){
+            list.splice(idx, 1);
+            saveSerieToStorage();
+            renderSerieUI();
+          });
+          chip.appendChild(codeSpan);
+          chip.appendChild(removeBtn);
+          chips.appendChild(chip);
+        });
+        cellWrap.appendChild(chips);
       }
+
+      tdScan.appendChild(cellWrap);
       tr.appendChild(tdScan);
       el.serieTableBody.appendChild(tr);
     });
   }
 
+  var SERIE_SCAN_COOLDOWN_MS = 1200;
+  var serieScanCooldownUntil = 0;
+
+  function serieScanStatusText(row){
+    var qty = row.qty || 1;
+    var count = (row.scannedList || []).length;
+    if(count >= qty){ return "Linha completa (" + count + "/" + qty + ") — pode escanear mais ou fechar a câmera"; }
+    return "Escaneando " + (count + 1) + " de " + qty + " — aponte pro próximo código de série";
+  }
+
   function scanSerieRow(row){
+    if(!Array.isArray(row.scannedList)){ row.scannedList = []; }
     openScanner(null, {
-      statusText: "Aponte a câmera para o código de barras de série",
+      statusText: serieScanStatusText(row),
       onDecode: function(decodedText){
+        var now = Date.now();
+        if(now < serieScanCooldownUntil){ return; }
+
         var code = String(decodedText || "").trim();
         if(!code){ return; }
-        row.scanned = code;
+
+        if(row.scannedList.indexOf(code) !== -1){
+          serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
+          showToast("Esse código já foi escaneado nesta linha.", "error");
+          return;
+        }
+
+        row.scannedList.push(code);
+        serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
         saveSerieToStorage();
         playScanBeep();
-        closeScanner();
         renderSerieUI();
-        showToast("Código capturado: " + code);
+
+        var qty = row.qty || 1;
+        if(row.scannedList.length >= qty){
+          closeScanner();
+          showToast("Linha completa: " + row.scannedList.length + "/" + qty + ".");
+        } else {
+          el.scannerStatus.textContent = serieScanStatusText(row);
+        }
       }
     });
   }
@@ -3317,11 +3465,18 @@
       return;
     }
     loadXlsxLib().then(function(XLSX){
-      var aoa = [serie.headers.concat(["Código de série"])];
+      // Uma linha por unidade escaneada (repete as colunas originais) — uma
+      // linha da planilha com Quantidade=23 e 23 leituras vira 23 linhas no
+      // export, uma por número de série. Linhas sem nenhum escaneamento ainda
+      // saem como uma linha só, com a coluna de série em branco.
+      var aoa = [serie.headers.concat(["Quantidade esperada", "Número de série"])];
       serie.rows.forEach(function(row){
-        var line = serie.headers.map(function(h){ return row.cells[h] || ""; });
-        line.push(row.scanned || "");
-        aoa.push(line);
+        var base = serie.headers.map(function(h){ return row.cells[h] || ""; });
+        var qty = row.qty || 1;
+        var codes = (row.scannedList && row.scannedList.length) ? row.scannedList : [""];
+        codes.forEach(function(code){
+          aoa.push(base.concat([qty, code]));
+        });
       });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       var wb = XLSX.utils.book_new();
