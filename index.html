@@ -3159,8 +3159,7 @@
     return String(s || "").toLowerCase().trim();
   }
 
-  function detectQtyColumn(headers){
-    var keywords = ["quantidade", "quant", "qtde", "qtd", "quantity", "qty"];
+  function detectColumn(headers, keywords){
     for(var i = 0; i < headers.length; i++){
       var norm = normalizeHeaderText(headers[i]);
       for(var k = 0; k < keywords.length; k++){
@@ -3168,6 +3167,21 @@
       }
     }
     return null;
+  }
+
+  function detectQtyColumn(headers){
+    return detectColumn(headers, ["quantidade", "quant", "qtde", "qtd", "quantity", "qty"]);
+  }
+
+  // Detecta as colunas de código do item e descrição na planilha importada —
+  // são os únicos campos do produto que precisam ir pro SharePoint junto do
+  // código de série escaneado (o resto da planilha fica só na tela local).
+  function detectCodeColumn(headers){
+    return detectColumn(headers, ["codigo do item", "código do item", "cod. item", "cod item", "codigo produto", "código produto", "sku", "codigo", "código"]);
+  }
+
+  function detectDescColumn(headers){
+    return detectColumn(headers, ["descricao", "descrição", "descr", "desc"]);
   }
 
   function parseQty(value){
@@ -3203,6 +3217,8 @@
       if(parsed && Array.isArray(parsed.headers) && Array.isArray(parsed.rows)){
         var qtyHeader = detectQtyColumn(parsed.headers);
         parsed.rows.forEach(function(row){ migrateSerieRow(row, qtyHeader); });
+        if(!parsed.codeHeader){ parsed.codeHeader = detectCodeColumn(parsed.headers); }
+        if(!parsed.descHeader){ parsed.descHeader = detectDescColumn(parsed.headers); }
         serie = parsed;
       }
     }catch(e){}
@@ -3221,13 +3237,15 @@
     var key = row.id + "::" + entry.code;
     if(serieInFlightSyncKeys[key]){ return Promise.resolve(false); }
     serieInFlightSyncKeys[key] = true;
+    // Só o que foi pedido pro SharePoint: usuário, código do item, descrição,
+    // quantidade e o código que o scanner bipou. Data/hora fica por conta do
+    // "Criado" automático da lista — não precisa mandar de novo.
     var payload = {
-      planilha: serie.fileName || "",
-      dadosLinha: JSON.stringify(row.cells || {}),
-      codigoSerie: entry.code,
       usuario: session ? session.username : "",
-      unidade: session ? session.unitLabel : "",
-      dataHora: entry.ts || new Date().toISOString()
+      codigoItem: (serie.codeHeader && row.cells[serie.codeHeader]) || "",
+      descricao: (serie.descHeader && row.cells[serie.descHeader]) || "",
+      quantidade: row.qty || 1,
+      codigoSerie: entry.code
     };
     return fetch("/api/serieScan", {
       method: "POST",
@@ -3295,6 +3313,8 @@
       return label;
     });
     var qtyHeader = detectQtyColumn(headers);
+    var codeHeader = detectCodeColumn(headers);
+    var descHeader = detectDescColumn(headers);
 
     var rows = [];
     for(var r = 1; r < rowsAoa.length; r++){
@@ -3321,11 +3341,13 @@
       return;
     }
 
-    serie = { fileName: fileName, headers: headers, rows: rows };
+    serie = { fileName: fileName, headers: headers, rows: rows, qtyHeader: qtyHeader, codeHeader: codeHeader, descHeader: descHeader };
     saveSerieToStorage();
     renderSerieUI();
-    var qtyNote = qtyHeader ? (" Quantidade detectada pela coluna \"" + qtyHeader + "\".") : "";
-    showToast(rows.length + (rows.length === 1 ? " linha importada." : " linhas importadas.") + qtyNote);
+    var qtyNote = qtyHeader ? (" Quantidade: coluna \"" + qtyHeader + "\".") : "";
+    var codeNote = codeHeader ? (" Código do item: coluna \"" + codeHeader + "\".") : " Não achei uma coluna de código do item — vai pro SharePoint em branco.";
+    var descNote = descHeader ? (" Descrição: coluna \"" + descHeader + "\".") : "";
+    showToast(rows.length + (rows.length === 1 ? " linha importada." : " linhas importadas.") + qtyNote + codeNote + descNote);
   }
 
   function renderSerieUI(){
