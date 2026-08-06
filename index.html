@@ -151,7 +151,16 @@
     line-height:1; padding:2px 5px; flex-shrink:0;
   }
   .serie-chip-remove:hover{ color:var(--danger); }
-  @media (min-width:900px){ .serie-wrap{ max-width:1100px; padding:24px; margin:0 auto; } }
+  .serie-view-toggle{ display:flex; gap:8px; }
+  .serie-toggle-btn{
+    flex:1; padding:10px; border-radius:var(--radius-md); border:1px solid var(--border);
+    background:var(--surface); color:var(--ink-muted); font-size:.8rem; font-weight:700; cursor:pointer;
+  }
+  .serie-toggle-btn.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+  .serie-view-panel{ display:none; flex:1; min-height:0; flex-direction:column; }
+  .serie-view-panel.active{ display:flex; }
+  .history-badge.pending{ background:var(--surface-2); color:var(--ink-muted); }
+  @media (min-width:900px){ .serie-wrap{ max-width:1100px; padding:24px; margin:0 auto; } .serie-view-toggle{ max-width:420px; } }
 
   /* ---- login ---- */
   .brand-center{
@@ -875,7 +884,7 @@
   <section id="screen-app" class="screen">
     <header class="topbar">
       <button type="button" class="icon-btn neutral" id="btn-hub-app" title="Voltar ao início" aria-label="Voltar ao início">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7"></path><path d="M9 22V12h6v10"></path></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
       </button>
       <span id="unit-chip" class="unit-chip"><span class="dot"></span><span id="unit-chip-label"></span></span>
       <span class="topbar-title" id="topbar-title"></span>
@@ -1162,7 +1171,7 @@
   <section id="screen-serie" class="screen">
     <header class="topbar">
       <button type="button" class="icon-btn neutral" id="btn-hub-serie" title="Voltar ao início" aria-label="Voltar ao início">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7"></path><path d="M9 22V12h6v10"></path></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
       </button>
       <span class="topbar-title">Conferência de Série</span>
       <button type="button" class="icon-btn" id="btn-logout-serie" title="Sair" aria-label="Sair">
@@ -1202,7 +1211,12 @@
           </div>
         </div>
 
-        <div class="card list-card" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+        <div class="serie-view-toggle">
+          <button type="button" class="serie-toggle-btn active" id="serie-toggle-planilha">Planilha</button>
+          <button type="button" class="serie-toggle-btn" id="serie-toggle-historico">Histórico de escaneamentos</button>
+        </div>
+
+        <div class="card list-card serie-view-panel active" id="serie-view-planilha" style="flex:1; min-height:0;">
           <div class="list-head">
             <h2 style="margin:0;" id="serie-file-name">Planilha importada</h2>
             <span style="display:flex; gap:8px;">
@@ -1222,6 +1236,20 @@
               <tbody id="serie-table-body"></tbody>
             </table>
           </div>
+        </div>
+
+        <div class="card list-card serie-view-panel" id="serie-view-historico" style="flex:1; min-height:0;">
+          <div class="list-head">
+            <h2 style="margin:0;">Histórico de escaneamentos</h2>
+          </div>
+          <div class="list-search-wrap">
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="serie-historico-search" type="text" placeholder="Buscar por código ou usuário" autocomplete="off">
+            </div>
+          </div>
+          <div id="serie-historico-empty" class="list-empty" style="display:none;">Nenhum código escaneado ainda.</div>
+          <div id="serie-historico-list" class="entry-list-scroll"></div>
         </div>
       </div>
     </div>
@@ -1326,6 +1354,13 @@
     serieSearch: document.getElementById("serie-search"),
     serieTableHead: document.getElementById("serie-table-head"),
     serieTableBody: document.getElementById("serie-table-body"),
+    serieToggleBtnPlanilha: document.getElementById("serie-toggle-planilha"),
+    serieToggleBtnHistorico: document.getElementById("serie-toggle-historico"),
+    serieViewPlanilha: document.getElementById("serie-view-planilha"),
+    serieViewHistorico: document.getElementById("serie-view-historico"),
+    serieHistoricoSearch: document.getElementById("serie-historico-search"),
+    serieHistoricoEmpty: document.getElementById("serie-historico-empty"),
+    serieHistoricoList: document.getElementById("serie-historico-list"),
     loginForm: document.getElementById("login-form"),
     inputUsuario: document.getElementById("input-usuario"),
     inputSenha: document.getElementById("input-senha"),
@@ -3241,7 +3276,7 @@
     // quantidade e o código que o scanner bipou. Data/hora fica por conta do
     // "Criado" automático da lista — não precisa mandar de novo.
     var payload = {
-      usuario: session ? session.username : "",
+      usuario: entry.usuario || (session ? session.username : ""),
       codigoItem: (serie.codeHeader && row.cells[serie.codeHeader]) || "",
       descricao: (serie.descHeader && row.cells[serie.descHeader]) || "",
       quantidade: row.qty || 1,
@@ -3373,7 +3408,79 @@
     el.serieStatUnits.textContent = scannedUnits + "/" + expectedUnits;
 
     renderSerieTable();
+    renderSerieHistory();
   }
+
+  /* ---- histórico de escaneamentos (lista plana de tudo que já foi lançado com o scanner) ---- */
+
+  function switchSerieView(view){
+    el.serieToggleBtnPlanilha.classList.toggle("active", view === "planilha");
+    el.serieToggleBtnHistorico.classList.toggle("active", view === "historico");
+    el.serieViewPlanilha.classList.toggle("active", view === "planilha");
+    el.serieViewHistorico.classList.toggle("active", view === "historico");
+  }
+
+  el.serieToggleBtnPlanilha.addEventListener("click", function(){ switchSerieView("planilha"); });
+  el.serieToggleBtnHistorico.addEventListener("click", function(){ switchSerieView("historico"); });
+
+  function serieHistoryEntries(){
+    var flat = [];
+    serie.rows.forEach(function(row){
+      (row.scannedList || []).forEach(function(entry){
+        flat.push({
+          code: entry.code,
+          spId: entry.spId,
+          ts: entry.ts,
+          usuario: entry.usuario || "",
+          codigoItem: (serie.codeHeader && row.cells[serie.codeHeader]) || "",
+          descricao: (serie.descHeader && row.cells[serie.descHeader]) || ""
+        });
+      });
+    });
+    flat.sort(function(a, b){ return new Date(b.ts || 0) - new Date(a.ts || 0); });
+    return flat;
+  }
+
+  function renderSerieHistory(){
+    var term = (el.serieHistoricoSearch.value || "").trim().toLowerCase();
+    var all = serieHistoryEntries();
+    if(term){
+      all = all.filter(function(e){
+        return (e.code && e.code.toLowerCase().indexOf(term) !== -1) ||
+          (e.usuario && e.usuario.toLowerCase().indexOf(term) !== -1) ||
+          (e.codigoItem && e.codigoItem.toLowerCase().indexOf(term) !== -1);
+      });
+    }
+
+    el.serieHistoricoList.innerHTML = "";
+    if(!all.length){
+      el.serieHistoricoEmpty.textContent = term ? "Nenhum código encontrado pra essa busca." : "Nenhum código escaneado ainda.";
+      el.serieHistoricoEmpty.style.display = "block";
+      return;
+    }
+    el.serieHistoricoEmpty.style.display = "none";
+
+    all.forEach(function(e){
+      var row = document.createElement("div");
+      row.className = "history-row";
+      var synced = !!e.spId;
+      row.innerHTML =
+        '<div class="history-top">' +
+          '<span class="history-badge ' + (synced ? "criado" : "pending") + '">' + (synced ? "Sincronizado" : "Pendente") + '</span>' +
+          '<span class="history-code"></span>' +
+        '</div>' +
+        '<div class="history-meta"></div>';
+      row.querySelector(".history-code").textContent = e.code;
+      var metaParts = [];
+      if(e.codigoItem || e.descricao){ metaParts.push([e.codigoItem, e.descricao].filter(Boolean).join(" · ")); }
+      if(e.usuario){ metaParts.push("Por " + e.usuario); }
+      metaParts.push(e.ts ? formatWhen(e.ts) : "");
+      row.querySelector(".history-meta").textContent = metaParts.filter(Boolean).join(" · ");
+      el.serieHistoricoList.appendChild(row);
+    });
+  }
+
+  el.serieHistoricoSearch.addEventListener("input", renderSerieHistory);
 
   function serieFilteredRows(){
     var term = (el.serieSearch.value || "").trim().toLowerCase();
@@ -3521,7 +3628,7 @@
           return;
         }
 
-        var entry = { code: code, spId: null, ts: new Date().toISOString() };
+        var entry = { code: code, spId: null, ts: new Date().toISOString(), usuario: session ? session.username : "" };
         row.scannedList.push(entry);
         serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
         saveSerieToStorage();
