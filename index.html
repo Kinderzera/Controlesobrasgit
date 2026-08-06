@@ -79,84 +79,6 @@
   @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 
-  /* ---- hub (seleção de app) ---- */
-  .hub-wrap{ flex:1; display:flex; flex-direction:column; padding:24px; gap:14px; width:100%; max-width:640px; margin:0 auto; }
-  .hub-apps{ display:flex; flex-direction:column; gap:14px; margin-top:8px; }
-  .hub-app-card{
-    display:flex; align-items:center; gap:16px; width:100%; text-align:left;
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
-    padding:20px; cursor:pointer; transition:border-color .15s ease, transform .1s ease;
-    color:inherit; font:inherit;
-  }
-  .hub-app-card:hover{ border-color:var(--accent); }
-  .hub-app-card:active{ transform:translateY(1px); }
-  .hub-app-icon{
-    width:52px; height:52px; border-radius:14px; flex-shrink:0;
-    background:linear-gradient(135deg, var(--accent), var(--accent-dark));
-    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);
-  }
-  .hub-app-icon svg{ width:26px; height:26px; color:#fff; }
-  .hub-app-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
-  .hub-app-name{ color:var(--ink); font-weight:700; font-size:.98rem; }
-  .hub-app-desc{ color:var(--ink-muted); font-size:.8rem; line-height:1.4; }
-  .hub-app-arrow{ color:var(--ink-muted); flex-shrink:0; display:flex; }
-  .hub-app-arrow svg{ width:20px; height:20px; }
-  @media (min-width:900px){ .hub-wrap{ max-width:760px; padding:56px 24px; } }
-
-  /* ---- conferência de série ---- */
-  .serie-wrap{ flex:1; display:flex; flex-direction:column; min-height:0; padding:16px; gap:16px; width:100%; max-width:1100px; margin:0 auto; }
-  .serie-import{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:16px; padding:44px 20px; }
-  .serie-import-icon{
-    width:52px; height:52px; border-radius:14px;
-    background:linear-gradient(135deg, var(--accent), var(--accent-dark));
-    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);
-  }
-  .serie-import-icon svg{ width:26px; height:26px; color:#fff; }
-  .serie-result{ display:none; flex:1; min-height:0; flex-direction:column; gap:16px; }
-  .serie-result.show{ display:flex; }
-  .serie-summary{ display:flex; gap:10px; flex-wrap:wrap; }
-  .serie-table-wrap{ flex:1; min-height:0; }
-  .panel-table tbody tr.serie-row-done{ background:var(--success-soft); }
-  .panel-table td.serie-scan-cell{ white-space:normal; min-width:230px; vertical-align:top; }
-  .serie-cell{ display:flex; flex-direction:column; gap:8px; }
-  .serie-progress-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-  .serie-progress-badge{
-    font-size:.72rem; font-weight:800; padding:3px 9px; border-radius:999px;
-    background:var(--surface-2); color:var(--ink-muted); white-space:nowrap;
-  }
-  .serie-progress-badge.done{ background:var(--success-soft); color:var(--success); }
-  .serie-scan-btn{
-    display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent);
-    border:none; border-radius:var(--radius-sm); padding:7px 10px; font-size:.75rem; font-weight:700;
-    cursor:pointer; white-space:nowrap; align-self:flex-start;
-  }
-  .serie-scan-btn svg{ width:15px; height:15px; }
-  .serie-chips{ display:flex; flex-wrap:wrap; gap:4px; max-height:110px; overflow-y:auto; }
-  .serie-chip{
-    display:inline-flex; align-items:center; gap:5px; background:var(--surface-2); border:1px solid var(--border);
-    border-radius:999px; padding:3px 3px 3px 8px; font-size:.68rem; color:var(--ink); max-width:170px;
-  }
-  .serie-chip-dot{
-    width:6px; height:6px; border-radius:50%; background:var(--ink-muted); flex-shrink:0;
-  }
-  .serie-chip.synced .serie-chip-dot{ background:var(--success); }
-  .serie-chip-code{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .serie-chip-remove{
-    background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:.85rem;
-    line-height:1; padding:2px 5px; flex-shrink:0;
-  }
-  .serie-chip-remove:hover{ color:var(--danger); }
-  .serie-view-toggle{ display:flex; gap:8px; }
-  .serie-toggle-btn{
-    flex:1; padding:10px; border-radius:var(--radius-md); border:1px solid var(--border);
-    background:var(--surface); color:var(--ink-muted); font-size:.8rem; font-weight:700; cursor:pointer;
-  }
-  .serie-toggle-btn.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
-  .serie-view-panel{ display:none; flex:1; min-height:0; flex-direction:column; }
-  .serie-view-panel.active{ display:flex; }
-  .history-badge.pending{ background:var(--surface-2); color:var(--ink-muted); }
-  @media (min-width:900px){ .serie-wrap{ max-width:1100px; padding:24px; margin:0 auto; } .serie-view-toggle{ max-width:420px; } }
-
   /* ---- login ---- */
   .brand-center{
     display:flex; flex-direction:column; align-items:center; text-align:center;
@@ -306,7 +228,6 @@
   }
   .icon-btn:hover{ background:var(--surface-2); color:var(--danger); }
   .icon-btn svg{ width:19px; height:19px; }
-  .icon-btn.neutral:hover{ color:var(--accent); }
 
   .user-block{ display:flex; align-items:center; gap:6px; }
 
@@ -831,56 +752,9 @@
     </div>
   </section>
 
-  <!-- HUB (seleção de app) -->
-  <section id="screen-hub" class="screen">
-    <header class="topbar">
-      <span class="topbar-title">Selecionar aplicativo</span>
-      <span class="user-block">
-        <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        <span class="user-name" id="hub-user-name"></span>
-      </span>
-      <button type="button" class="icon-btn" id="btn-logout-hub" title="Sair" aria-label="Sair">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
-      </button>
-    </header>
-
-    <div class="hub-wrap">
-      <div class="hub-apps">
-        <button type="button" class="hub-app-card" id="hub-card-sobras">
-          <span class="hub-app-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-          </span>
-          <span class="hub-app-body">
-            <span class="hub-app-name">Controle de Sobras</span>
-            <span class="hub-app-desc">Registrar, conferir e acompanhar sobras de recebimento em reoperação.</span>
-          </span>
-          <span class="hub-app-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </span>
-        </button>
-
-        <button type="button" class="hub-app-card" id="hub-card-serie">
-          <span class="hub-app-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="9" x2="7" y2="16"></line><line x1="11" y1="9" x2="11" y2="16"></line><line x1="15" y1="9" x2="15" y2="16"></line><line x1="19" y1="9" x2="19" y2="16"></line></svg>
-          </span>
-          <span class="hub-app-body">
-            <span class="hub-app-name">Conferência de Série</span>
-            <span class="hub-app-desc">Importe uma planilha e escaneie o código de barras de série de cada produto.</span>
-          </span>
-          <span class="hub-app-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </span>
-        </button>
-      </div>
-    </div>
-  </section>
-
   <!-- APP -->
   <section id="screen-app" class="screen">
     <header class="topbar">
-      <button type="button" class="icon-btn neutral" id="btn-hub-app" title="Voltar ao início" aria-label="Voltar ao início">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-      </button>
       <span id="unit-chip" class="unit-chip"><span class="dot"></span><span id="unit-chip-label"></span></span>
       <span class="topbar-title" id="topbar-title"></span>
       <span class="user-block">
@@ -1161,94 +1035,6 @@
       </div>
     </nav>
   </section>
-
-  <!-- CONFERÊNCIA DE SÉRIE -->
-  <section id="screen-serie" class="screen">
-    <header class="topbar">
-      <button type="button" class="icon-btn neutral" id="btn-hub-serie" title="Voltar ao início" aria-label="Voltar ao início">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-      </button>
-      <span class="topbar-title">Conferência de Série</span>
-      <button type="button" class="icon-btn" id="btn-logout-serie" title="Sair" aria-label="Sair">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
-      </button>
-    </header>
-
-    <div class="serie-wrap">
-      <div class="card serie-import" id="serie-import-card">
-        <span class="serie-import-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        </span>
-        <div>
-          <h2 style="margin-bottom:6px;">Importar planilha</h2>
-          <p class="card-caption" style="margin:0;">Selecione um arquivo Excel (.xlsx/.xls) ou CSV com os produtos. Cada linha vira uma conferência — depois é só escanear o código de barras de série de cada uma.</p>
-        </div>
-        <button type="button" class="btn-primary" id="btn-serie-import" style="width:auto; padding:12px 22px;">
-          ESCOLHER ARQUIVO
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        </button>
-        <input type="file" id="serie-file-input" accept=".xlsx,.xls,.csv" hidden>
-      </div>
-
-      <div id="serie-result" class="serie-result">
-        <div class="summary serie-summary">
-          <div class="stat-box">
-            <span class="stat-value" id="serie-stat-total">0</span>
-            <span class="stat-label">Linhas na planilha</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-value" id="serie-stat-done">0</span>
-            <span class="stat-label">Linhas completas</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-value" id="serie-stat-units">0/0</span>
-            <span class="stat-label">Unidades escaneadas</span>
-          </div>
-        </div>
-
-        <div class="serie-view-toggle">
-          <button type="button" class="serie-toggle-btn active" id="serie-toggle-planilha">Planilha</button>
-          <button type="button" class="serie-toggle-btn" id="serie-toggle-historico">Histórico de escaneamentos</button>
-        </div>
-
-        <div class="card list-card serie-view-panel active" id="serie-view-planilha" style="flex:1; min-height:0;">
-          <div class="list-head">
-            <h2 style="margin:0;" id="serie-file-name">Planilha importada</h2>
-            <span style="display:flex; gap:8px;">
-              <button type="button" class="btn-compact" id="btn-serie-export">Exportar Excel</button>
-              <button type="button" class="btn-compact" id="btn-serie-reset">Nova planilha</button>
-            </span>
-          </div>
-          <div class="list-search-wrap">
-            <div class="input-wrap">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input id="serie-search" type="text" placeholder="Buscar em qualquer coluna" autocomplete="off">
-            </div>
-          </div>
-          <div class="table-scroll serie-table-wrap">
-            <table class="panel-table" id="serie-table">
-              <thead><tr id="serie-table-head"></tr></thead>
-              <tbody id="serie-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card list-card serie-view-panel" id="serie-view-historico" style="flex:1; min-height:0;">
-          <div class="list-head">
-            <h2 style="margin:0;">Histórico de escaneamentos</h2>
-          </div>
-          <div class="list-search-wrap">
-            <div class="input-wrap">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input id="serie-historico-search" type="text" placeholder="Buscar por código ou usuário" autocomplete="off">
-            </div>
-          </div>
-          <div id="serie-historico-empty" class="list-empty" style="display:none;">Nenhum código escaneado ainda.</div>
-          <div id="serie-historico-list" class="entry-list-scroll"></div>
-        </div>
-      </div>
-    </div>
-  </section>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -1326,36 +1112,7 @@
   var el = {
     screenLogin: document.getElementById("screen-login"),
     screenLoading: document.getElementById("screen-loading"),
-    screenHub: document.getElementById("screen-hub"),
     screenApp: document.getElementById("screen-app"),
-    screenSerie: document.getElementById("screen-serie"),
-    hubUserName: document.getElementById("hub-user-name"),
-    btnLogoutHub: document.getElementById("btn-logout-hub"),
-    hubCardSobras: document.getElementById("hub-card-sobras"),
-    hubCardSerie: document.getElementById("hub-card-serie"),
-    btnHubApp: document.getElementById("btn-hub-app"),
-    btnHubSerie: document.getElementById("btn-hub-serie"),
-    btnLogoutSerie: document.getElementById("btn-logout-serie"),
-    serieImportCard: document.getElementById("serie-import-card"),
-    btnSerieImport: document.getElementById("btn-serie-import"),
-    serieFileInput: document.getElementById("serie-file-input"),
-    serieResult: document.getElementById("serie-result"),
-    serieStatTotal: document.getElementById("serie-stat-total"),
-    serieStatDone: document.getElementById("serie-stat-done"),
-    serieStatUnits: document.getElementById("serie-stat-units"),
-    serieFileName: document.getElementById("serie-file-name"),
-    btnSerieExport: document.getElementById("btn-serie-export"),
-    btnSerieReset: document.getElementById("btn-serie-reset"),
-    serieSearch: document.getElementById("serie-search"),
-    serieTableHead: document.getElementById("serie-table-head"),
-    serieTableBody: document.getElementById("serie-table-body"),
-    serieToggleBtnPlanilha: document.getElementById("serie-toggle-planilha"),
-    serieToggleBtnHistorico: document.getElementById("serie-toggle-historico"),
-    serieViewPlanilha: document.getElementById("serie-view-planilha"),
-    serieViewHistorico: document.getElementById("serie-view-historico"),
-    serieHistoricoSearch: document.getElementById("serie-historico-search"),
-    serieHistoricoEmpty: document.getElementById("serie-historico-empty"),
-    serieHistoricoList: document.getElementById("serie-historico-list"),
     loginForm: document.getElementById("login-form"),
     inputUsuario: document.getElementById("input-usuario"),
     inputSenha: document.getElementById("input-senha"),
@@ -1510,13 +1267,9 @@
   function showScreen(name){
     el.screenLogin.classList.remove("active");
     el.screenLoading.classList.remove("active");
-    el.screenHub.classList.remove("active");
     el.screenApp.classList.remove("active");
-    el.screenSerie.classList.remove("active");
     if(name === "login"){ el.screenLogin.classList.add("active"); }
     else if(name === "loading"){ el.screenLoading.classList.add("active"); }
-    else if(name === "hub"){ el.screenHub.classList.add("active"); }
-    else if(name === "serie"){ el.screenSerie.classList.add("active"); }
     else{ el.screenApp.classList.add("active"); }
   }
 
@@ -3011,18 +2764,9 @@
     });
   }
 
-  var SCANNER_DEFAULT_STATUS = "Aponte a câmera para o código de barras (toque na tela pra focar)";
-  var scannerDecodeHandler = null;
-
-  // row: linha de contexto opcional (usada pelo fluxo de "Registrar sobras").
-  // opts.onDecode: callback custom pra outros usos do scanner (ex.: Conferência
-  // de Série) — se não vier, cai no comportamento padrão (onScanDecoded).
-  // opts.statusText: mensagem exibida no topo da câmera.
-  function openScanner(row, opts){
-    opts = opts || {};
-    scannerTargetRow = row || null;
-    scannerDecodeHandler = opts.onDecode || onScanDecoded;
-    el.scannerStatus.textContent = opts.statusText || SCANNER_DEFAULT_STATUS;
+  function openScanner(row){
+    scannerTargetRow = row;
+    el.scannerStatus.textContent = "Aponte a câmera para o código de barras (toque na tela pra focar)";
     resetTorchButton();
     el.scannerOverlay.classList.add("show");
 
@@ -3049,7 +2793,7 @@
       return scannerLib.start(
         { facingMode: "environment" },
         { fps: 25, qrbox: { width: 300, height: 140 }, disableFlip: true },
-        function(decodedText){ if(scannerDecodeHandler){ scannerDecodeHandler(decodedText); } },
+        onScanDecoded,
         function(){ /* ignora falhas de leitura por frame — é normal até achar o código */ }
       );
     }).then(function(){
@@ -3077,7 +2821,6 @@
   function closeScanner(){
     el.scannerOverlay.classList.remove("show");
     scannerTargetRow = null;
-    scannerDecodeHandler = null;
     resetTorchButton();
     if(scannerLib && scannerLib.isScanning){
       scannerLib.stop().then(function(){ scannerLib.clear(); }).catch(function(){});
@@ -3154,576 +2897,6 @@
 
   el.scannerClose.addEventListener("click", closeScanner);
   el.scannerTorch.addEventListener("click", toggleTorch);
-
-  /* ---------------- conferência de série ---------------- */
-
-  var SERIE_STORAGE_KEY = "sobras_serie_v1";
-  var serie = { fileName: null, headers: [], rows: [] };
-  var xlsxLibPromise = null;
-
-  function loadXlsxLib(){
-    if(xlsxLibPromise){ return xlsxLibPromise; }
-    xlsxLibPromise = new Promise(function(resolve, reject){
-      if(window.XLSX){ resolve(window.XLSX); return; }
-      var script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-      script.onload = function(){
-        if(window.XLSX){ resolve(window.XLSX); }
-        else { reject(new Error("xlsx não carregou")); }
-      };
-      script.onerror = function(){ reject(new Error("Falha ao carregar o leitor de planilhas")); };
-      document.head.appendChild(script);
-    });
-    return xlsxLibPromise;
-  }
-
-  function saveSerieToStorage(){
-    try{ localStorage.setItem(SERIE_STORAGE_KEY, JSON.stringify(serie)); }catch(e){}
-  }
-
-  // Detecta qual coluna da planilha representa a quantidade de unidades de
-  // cada linha (ex.: "Quantidade", "Qtd") pra saber quantos códigos de série
-  // diferentes precisam ser escaneados naquela linha — um produto com 23
-  // unidades exige 23 leituras de código de barras distintas, não 1.
-  function normalizeHeaderText(s){
-    return String(s || "").toLowerCase().trim();
-  }
-
-  function detectColumn(headers, keywords){
-    for(var i = 0; i < headers.length; i++){
-      var norm = normalizeHeaderText(headers[i]);
-      for(var k = 0; k < keywords.length; k++){
-        if(norm.indexOf(keywords[k]) !== -1){ return headers[i]; }
-      }
-    }
-    return null;
-  }
-
-  function detectQtyColumn(headers){
-    return detectColumn(headers, ["quantidade", "quant", "qtde", "qtd", "quantity", "qty"]);
-  }
-
-  // Detecta as colunas de código do item e descrição na planilha importada —
-  // são os únicos campos do produto que precisam ir pro SharePoint junto do
-  // código de série escaneado (o resto da planilha fica só na tela local).
-  function detectCodeColumn(headers){
-    return detectColumn(headers, ["codigo do item", "código do item", "cod. item", "cod item", "codigo produto", "código produto", "sku", "codigo", "código"]);
-  }
-
-  function detectDescColumn(headers){
-    return detectColumn(headers, ["descricao", "descrição", "descr", "desc"]);
-  }
-
-  function parseQty(value){
-    var n = parseInt(String(value || "").replace(/[^\d-]/g, ""), 10);
-    return (n && n > 0) ? n : 1;
-  }
-
-  // Cada código escaneado agora é um objeto { code, spId, ts } — spId fica
-  // vazio até o registro ser confirmado no SharePoint (mesma convenção de
-  // "spId" já usada nos lançamentos de sobras). Migra formatos salvos por
-  // versões anteriores: row.scanned (1 código, string) e scannedList como
-  // lista de strings (sem controle de sincronização).
-  function migrateSerieRow(row, qtyHeader){
-    if(!Array.isArray(row.scannedList)){
-      row.scannedList = row.scanned ? [{ code: row.scanned, spId: null, ts: null }] : [];
-    } else {
-      row.scannedList = row.scannedList.map(function(item){
-        if(typeof item === "string"){ return { code: item, spId: null, ts: null }; }
-        return item;
-      });
-    }
-    delete row.scanned;
-    if(!row.qty || row.qty < 1){
-      row.qty = qtyHeader ? parseQty(row.cells[qtyHeader]) : 1;
-    }
-  }
-
-  function loadSerieFromStorage(){
-    try{
-      var raw = localStorage.getItem(SERIE_STORAGE_KEY);
-      if(!raw) return;
-      var parsed = JSON.parse(raw);
-      if(parsed && Array.isArray(parsed.headers) && Array.isArray(parsed.rows)){
-        var qtyHeader = detectQtyColumn(parsed.headers);
-        parsed.rows.forEach(function(row){ migrateSerieRow(row, qtyHeader); });
-        if(!parsed.codeHeader){ parsed.codeHeader = detectCodeColumn(parsed.headers); }
-        if(!parsed.descHeader){ parsed.descHeader = detectDescColumn(parsed.headers); }
-        serie = parsed;
-      }
-    }catch(e){}
-  }
-
-  function refreshSerieScreen(){
-    renderSerieUI();
-    retrySerieSyncs();
-  }
-
-  /* ---- sincronização dos códigos escaneados com o SharePoint (best-effort, mesmo padrão do resto do app) ---- */
-
-  var serieInFlightSyncKeys = {};
-
-  function syncSerieCodeEntry(row, entry){
-    var key = row.id + "::" + entry.code;
-    if(serieInFlightSyncKeys[key]){ return Promise.resolve(false); }
-    serieInFlightSyncKeys[key] = true;
-    // Só o que foi pedido pro SharePoint: usuário, código do item, descrição,
-    // quantidade e o código que o scanner bipou. Data/hora fica por conta do
-    // "Criado" automático da lista — não precisa mandar de novo.
-    var payload = {
-      usuario: entry.usuario || (session ? session.username : ""),
-      codigoItem: (serie.codeHeader && row.cells[serie.codeHeader]) || "",
-      descricao: (serie.descHeader && row.cells[serie.descHeader]) || "",
-      quantidade: row.qty || 1,
-      codigoSerie: entry.code
-    };
-    return fetch("/api/serieScan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).then(function(resp){
-      return resp.ok ? resp.json().catch(function(){ return null; }) : null;
-    }).then(function(data){
-      if(data && data.id){
-        entry.spId = data.id;
-        saveSerieToStorage();
-        return true;
-      }
-      return false;
-    }).catch(function(){ return false; })
-      .finally(function(){ delete serieInFlightSyncKeys[key]; });
-  }
-
-  var serieSyncRetryBusy = false;
-  var serieSyncRetryLastRun = 0;
-  var SERIE_SYNC_RETRY_COOLDOWN_MS = 30000;
-
-  function retrySerieSyncs(){
-    if(serieSyncRetryBusy){ return; }
-    var now = Date.now();
-    if(now - serieSyncRetryLastRun < SERIE_SYNC_RETRY_COOLDOWN_MS){ return; }
-
-    var pending = [];
-    serie.rows.forEach(function(row){
-      (row.scannedList || []).forEach(function(entry){
-        if(!entry.spId){ pending.push({ row: row, entry: entry }); }
-      });
-    });
-    if(!pending.length){ return; }
-
-    serieSyncRetryLastRun = now;
-    serieSyncRetryBusy = true;
-    // Um de cada vez, não em paralelo — mesmo motivo dos outros fluxos: o
-    // Flow do SharePoint derruba com 503 se levar várias chamadas juntas.
-    var chain = Promise.resolve();
-    pending.forEach(function(p){
-      chain = chain.then(function(){ return syncSerieCodeEntry(p.row, p.entry); });
-    });
-    chain.then(function(){
-      serieSyncRetryBusy = false;
-      renderSerieUI();
-    }).catch(function(){ serieSyncRetryBusy = false; });
-  }
-
-  function importSerieRows(fileName, rowsAoa){
-    if(!rowsAoa || !rowsAoa.length){
-      showToast("Planilha vazia.", "error");
-      return;
-    }
-    var rawHeaders = rowsAoa[0] || [];
-    var seen = {};
-    var headers = rawHeaders.map(function(h, i){
-      var label = String(h || "").trim() || ("Coluna " + (i + 1));
-      if(seen[label]){
-        seen[label]++;
-        label = label + " (" + seen[label] + ")";
-      } else {
-        seen[label] = 1;
-      }
-      return label;
-    });
-    var qtyHeader = detectQtyColumn(headers);
-    var codeHeader = detectCodeColumn(headers);
-    var descHeader = detectDescColumn(headers);
-
-    // Lê cada linha da planilha primeiro, sem virar linha do app ainda —
-    // precisa agrupar por código do item antes (mesma peça pode aparecer em
-    // várias posições/linhas na planilha; no app isso vira 1 linha só, com
-    // as quantidades somadas, não uma linha repetida por posição).
-    var rawRowsList = [];
-    for(var r = 1; r < rowsAoa.length; r++){
-      var raw = rowsAoa[r] || [];
-      var isEmpty = raw.every(function(v){ return String(v === undefined || v === null ? "" : v).trim() === ""; });
-      if(isEmpty) continue;
-      var cells = {};
-      headers.forEach(function(h, i){
-        var v = raw[i];
-        cells[h] = (v === undefined || v === null) ? "" : String(v);
-      });
-      rawRowsList.push(cells);
-    }
-
-    var groups = [];
-    var groupIndexByKey = {};
-    rawRowsList.forEach(function(cells){
-      var key = codeHeader ? String(cells[codeHeader] || "").trim().toUpperCase() : "";
-      if(key && Object.prototype.hasOwnProperty.call(groupIndexByKey, key)){
-        groups[groupIndexByKey[key]].push(cells);
-      } else {
-        if(key){ groupIndexByKey[key] = groups.length; }
-        groups.push([cells]);
-      }
-    });
-
-    var rows = groups.map(function(groupCells, idx){
-      var merged = {};
-      headers.forEach(function(h){
-        var values = groupCells.map(function(c){ return c[h] || ""; }).filter(Boolean);
-        var unique = values.filter(function(v, i){ return values.indexOf(v) === i; });
-        merged[h] = unique.join(" / ");
-      });
-      var qty = qtyHeader
-        ? groupCells.reduce(function(sum, c){ return sum + parseQty(c[qtyHeader]); }, 0)
-        : groupCells.length;
-      if(qtyHeader){ merged[qtyHeader] = String(qty); }
-      return {
-        id: "sr_" + idx + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-        cells: merged,
-        scannedList: [],
-        qty: qty || 1
-      };
-    });
-
-    if(!rows.length){
-      showToast("Nenhuma linha de dados encontrada nessa planilha.", "error");
-      return;
-    }
-
-    serie = { fileName: fileName, headers: headers, rows: rows, qtyHeader: qtyHeader, codeHeader: codeHeader, descHeader: descHeader };
-    saveSerieToStorage();
-    renderSerieUI();
-    var qtyNote = qtyHeader ? (" Quantidade: coluna \"" + qtyHeader + "\".") : "";
-    var codeNote = codeHeader ? (" Código do item: coluna \"" + codeHeader + "\".") : " Não achei uma coluna de código do item — vai pro SharePoint em branco.";
-    var descNote = descHeader ? (" Descrição: coluna \"" + descHeader + "\".") : "";
-    showToast(rows.length + (rows.length === 1 ? " linha importada." : " linhas importadas.") + qtyNote + codeNote + descNote);
-  }
-
-  function renderSerieUI(){
-    if(!serie.headers.length){
-      el.serieImportCard.style.display = "flex";
-      el.serieResult.classList.remove("show");
-      return;
-    }
-    el.serieImportCard.style.display = "none";
-    el.serieResult.classList.add("show");
-    el.serieFileName.textContent = serie.fileName || "Planilha importada";
-
-    var doneRows = 0, scannedUnits = 0, expectedUnits = 0;
-    serie.rows.forEach(function(row){
-      var qty = row.qty || 1;
-      var count = (row.scannedList || []).length;
-      expectedUnits += qty;
-      scannedUnits += count;
-      if(count >= qty){ doneRows++; }
-    });
-    el.serieStatTotal.textContent = String(serie.rows.length);
-    el.serieStatDone.textContent = String(doneRows);
-    el.serieStatUnits.textContent = scannedUnits + "/" + expectedUnits;
-
-    renderSerieTable();
-    renderSerieHistory();
-  }
-
-  /* ---- histórico de escaneamentos (lista plana de tudo que já foi lançado com o scanner) ---- */
-
-  function switchSerieView(view){
-    el.serieToggleBtnPlanilha.classList.toggle("active", view === "planilha");
-    el.serieToggleBtnHistorico.classList.toggle("active", view === "historico");
-    el.serieViewPlanilha.classList.toggle("active", view === "planilha");
-    el.serieViewHistorico.classList.toggle("active", view === "historico");
-  }
-
-  el.serieToggleBtnPlanilha.addEventListener("click", function(){ switchSerieView("planilha"); });
-  el.serieToggleBtnHistorico.addEventListener("click", function(){ switchSerieView("historico"); });
-
-  function serieHistoryEntries(){
-    var flat = [];
-    serie.rows.forEach(function(row){
-      (row.scannedList || []).forEach(function(entry){
-        flat.push({
-          code: entry.code,
-          spId: entry.spId,
-          ts: entry.ts,
-          usuario: entry.usuario || "",
-          codigoItem: (serie.codeHeader && row.cells[serie.codeHeader]) || "",
-          descricao: (serie.descHeader && row.cells[serie.descHeader]) || ""
-        });
-      });
-    });
-    flat.sort(function(a, b){ return new Date(b.ts || 0) - new Date(a.ts || 0); });
-    return flat;
-  }
-
-  function renderSerieHistory(){
-    var term = (el.serieHistoricoSearch.value || "").trim().toLowerCase();
-    var all = serieHistoryEntries();
-    if(term){
-      all = all.filter(function(e){
-        return (e.code && e.code.toLowerCase().indexOf(term) !== -1) ||
-          (e.usuario && e.usuario.toLowerCase().indexOf(term) !== -1) ||
-          (e.codigoItem && e.codigoItem.toLowerCase().indexOf(term) !== -1);
-      });
-    }
-
-    el.serieHistoricoList.innerHTML = "";
-    if(!all.length){
-      el.serieHistoricoEmpty.textContent = term ? "Nenhum código encontrado pra essa busca." : "Nenhum código escaneado ainda.";
-      el.serieHistoricoEmpty.style.display = "block";
-      return;
-    }
-    el.serieHistoricoEmpty.style.display = "none";
-
-    all.forEach(function(e){
-      var row = document.createElement("div");
-      row.className = "history-row";
-      var synced = !!e.spId;
-      row.innerHTML =
-        '<div class="history-top">' +
-          '<span class="history-badge ' + (synced ? "criado" : "pending") + '">' + (synced ? "Sincronizado" : "Pendente") + '</span>' +
-          '<span class="history-code"></span>' +
-        '</div>' +
-        '<div class="history-meta"></div>';
-      row.querySelector(".history-code").textContent = e.code;
-      var metaParts = [];
-      if(e.codigoItem || e.descricao){ metaParts.push([e.codigoItem, e.descricao].filter(Boolean).join(" · ")); }
-      if(e.usuario){ metaParts.push("Por " + e.usuario); }
-      metaParts.push(e.ts ? formatWhen(e.ts) : "");
-      row.querySelector(".history-meta").textContent = metaParts.filter(Boolean).join(" · ");
-      el.serieHistoricoList.appendChild(row);
-    });
-  }
-
-  el.serieHistoricoSearch.addEventListener("input", renderSerieHistory);
-
-  function serieFilteredRows(){
-    var term = (el.serieSearch.value || "").trim().toLowerCase();
-    if(!term){ return serie.rows; }
-    return serie.rows.filter(function(row){
-      if((row.scannedList || []).some(function(e){ return e.code.toLowerCase().indexOf(term) !== -1; })){ return true; }
-      return serie.headers.some(function(h){
-        return String(row.cells[h] || "").toLowerCase().indexOf(term) !== -1;
-      });
-    });
-  }
-
-  var SCAN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1"></rect><line x1="7" y1="7" x2="7" y2="17"></line><line x1="10" y1="7" x2="10" y2="17"></line><line x1="15" y1="7" x2="15" y2="17"></line><line x1="18" y1="7" x2="18" y2="17"></line></svg>';
-
-  function renderSerieTable(){
-    el.serieTableHead.innerHTML = "";
-    serie.headers.forEach(function(h){
-      var th = document.createElement("th");
-      th.textContent = h;
-      el.serieTableHead.appendChild(th);
-    });
-    var thScan = document.createElement("th");
-    thScan.textContent = "Números de série";
-    el.serieTableHead.appendChild(thScan);
-
-    el.serieTableBody.innerHTML = "";
-    serieFilteredRows().forEach(function(row){
-      var qty = row.qty || 1;
-      var list = row.scannedList || [];
-      var done = list.length >= qty;
-
-      var tr = document.createElement("tr");
-      if(done){ tr.classList.add("serie-row-done"); }
-
-      serie.headers.forEach(function(h){
-        var td = document.createElement("td");
-        td.textContent = row.cells[h] || "";
-        tr.appendChild(td);
-      });
-
-      var tdScan = document.createElement("td");
-      tdScan.className = "serie-scan-cell";
-
-      var cellWrap = document.createElement("div");
-      cellWrap.className = "serie-cell";
-
-      var progressRow = document.createElement("div");
-      progressRow.className = "serie-progress-row";
-
-      var badge = document.createElement("span");
-      badge.className = "serie-progress-badge" + (done ? " done" : "");
-      badge.textContent = list.length + "/" + qty;
-      progressRow.appendChild(badge);
-
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "serie-scan-btn";
-      btn.innerHTML = SCAN_ICON_SVG + " " + (list.length ? "Continuar escaneando" : "Escanear");
-      btn.addEventListener("click", function(){ ensureBeepContext(); scanSerieRow(row); });
-      progressRow.appendChild(btn);
-
-      cellWrap.appendChild(progressRow);
-
-      if(list.length){
-        var chips = document.createElement("div");
-        chips.className = "serie-chips";
-        list.forEach(function(entry, idx){
-          var chip = document.createElement("span");
-          chip.className = "serie-chip" + (entry.spId ? " synced" : "");
-          var dot = document.createElement("span");
-          dot.className = "serie-chip-dot";
-          dot.title = entry.spId ? "Sincronizado com o SharePoint" : "Ainda não sincronizado";
-          var codeSpan = document.createElement("span");
-          codeSpan.className = "serie-chip-code";
-          codeSpan.textContent = entry.code;
-          codeSpan.title = entry.code;
-          var removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.className = "serie-chip-remove";
-          removeBtn.setAttribute("aria-label", "Remover código escaneado");
-          removeBtn.textContent = "×";
-          removeBtn.addEventListener("click", function(){
-            var wasSynced = !!entry.spId;
-            list.splice(idx, 1);
-            saveSerieToStorage();
-            renderSerieUI();
-            if(wasSynced){
-              showToast("Removido daqui, mas o registro já enviado ao SharePoint continua lá.", "error");
-            }
-          });
-          chip.appendChild(dot);
-          chip.appendChild(codeSpan);
-          chip.appendChild(removeBtn);
-          chips.appendChild(chip);
-        });
-        cellWrap.appendChild(chips);
-      }
-
-      tdScan.appendChild(cellWrap);
-      tr.appendChild(tdScan);
-      el.serieTableBody.appendChild(tr);
-    });
-  }
-
-  var SERIE_SCAN_COOLDOWN_MS = 1200;
-  var serieScanCooldownUntil = 0;
-
-  function serieScanStatusText(row){
-    var qty = row.qty || 1;
-    var count = (row.scannedList || []).length;
-    if(count >= qty){ return "Linha completa (" + count + "/" + qty + ") — pode escanear mais ou fechar a câmera"; }
-    return "Escaneando " + (count + 1) + " de " + qty + " — aponte pro próximo código de série";
-  }
-
-  function scanSerieRow(row){
-    if(!Array.isArray(row.scannedList)){ row.scannedList = []; }
-    openScanner(null, {
-      statusText: serieScanStatusText(row),
-      onDecode: function(decodedText){
-        var now = Date.now();
-        if(now < serieScanCooldownUntil){ return; }
-
-        var code = String(decodedText || "").trim();
-        if(!code){ return; }
-
-        if(row.scannedList.some(function(e){ return e.code === code; })){
-          serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
-          showToast("Esse código já foi escaneado nesta linha.", "error");
-          return;
-        }
-
-        var entry = { code: code, spId: null, ts: new Date().toISOString(), usuario: session ? session.username : "" };
-        row.scannedList.push(entry);
-        serieScanCooldownUntil = now + SERIE_SCAN_COOLDOWN_MS;
-        saveSerieToStorage();
-        playScanBeep();
-        renderSerieUI();
-        syncSerieCodeEntry(row, entry).then(function(){ renderSerieUI(); });
-
-        var qty = row.qty || 1;
-        if(row.scannedList.length >= qty){
-          closeScanner();
-          showToast("Linha completa: " + row.scannedList.length + "/" + qty + ".");
-        } else {
-          el.scannerStatus.textContent = serieScanStatusText(row);
-        }
-      }
-    });
-  }
-
-  el.btnSerieImport.addEventListener("click", function(){ el.serieFileInput.click(); });
-
-  el.serieFileInput.addEventListener("change", function(){
-    var file = el.serieFileInput.files && el.serieFileInput.files[0];
-    el.serieFileInput.value = "";
-    if(!file){ return; }
-    loadXlsxLib().then(function(XLSX){
-      var reader = new FileReader();
-      reader.onload = function(ev){
-        try{
-          var data = new Uint8Array(ev.target.result);
-          var wb = XLSX.read(data, { type: "array" });
-          var sheet = wb.Sheets[wb.SheetNames[0]];
-          var rowsAoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
-          importSerieRows(file.name, rowsAoa);
-        }catch(e){
-          showToast("Não foi possível ler essa planilha.", "error");
-        }
-      };
-      reader.onerror = function(){ showToast("Erro ao abrir o arquivo.", "error"); };
-      reader.readAsArrayBuffer(file);
-    }).catch(function(){
-      showToast("Não foi possível carregar o leitor de planilhas.", "error");
-    });
-  });
-
-  el.serieSearch.addEventListener("input", renderSerieTable);
-
-  el.btnSerieExport.addEventListener("click", function(){
-    if(!serie.rows.length){
-      showToast("Nada pra exportar ainda.", "error");
-      return;
-    }
-    loadXlsxLib().then(function(XLSX){
-      // Uma linha por unidade escaneada (repete as colunas originais) — uma
-      // linha da planilha com Quantidade=23 e 23 leituras vira 23 linhas no
-      // export, uma por número de série. Linhas sem nenhum escaneamento ainda
-      // saem como uma linha só, com a coluna de série em branco.
-      var aoa = [serie.headers.concat(["Quantidade esperada", "Número de série", "Sincronizado no SharePoint"])];
-      serie.rows.forEach(function(row){
-        var base = serie.headers.map(function(h){ return row.cells[h] || ""; });
-        var qty = row.qty || 1;
-        var list = (row.scannedList && row.scannedList.length) ? row.scannedList : [{ code: "", spId: null }];
-        list.forEach(function(entry){
-          aoa.push(base.concat([qty, entry.code || "", entry.spId ? "Sim" : "Não"]));
-        });
-      });
-      var ws = XLSX.utils.aoa_to_sheet(aoa);
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Conferência");
-      var baseName = (serie.fileName || "planilha").replace(/\.[^.]+$/, "");
-      XLSX.writeFile(wb, "conferencia_serie_" + baseName + ".xlsx");
-      showToast("Arquivo exportado.");
-    }).catch(function(){
-      showToast("Não foi possível exportar.", "error");
-    });
-  });
-
-  el.btnSerieReset.addEventListener("click", function(){
-    openConfirmModal(
-      "Começar nova planilha?",
-      "Isso apaga a planilha e os escaneamentos atuais desta conferência. Exporte antes se ainda precisar dos dados.",
-      function(){
-        serie = { fileName: null, headers: [], rows: [] };
-        saveSerieToStorage();
-        renderSerieUI();
-        showToast("Planilha removida. Importe uma nova pra continuar.");
-      }
-    );
-  });
 
   /* ---------------- batch entry grid ---------------- */
 
@@ -3971,17 +3144,8 @@
 
     el.userName.textContent = session.displayName;
     el.userNameSidebar.textContent = session.displayName;
-    el.hubUserName.textContent = session.displayName;
     applyRoleUI();
 
-    goToHub();
-  }
-
-  function goToHub(){
-    showScreen("hub");
-  }
-
-  function openSobrasApp(){
     resetBatchToSingleRow();
     showScreen("app");
     switchTab("lancar");
@@ -3993,18 +3157,6 @@
       setTimeout(tourStart, 600);
     }
   }
-
-  function openSerieApp(){
-    showScreen("serie");
-    refreshSerieScreen();
-  }
-
-  el.hubCardSobras.addEventListener("click", openSobrasApp);
-  el.hubCardSerie.addEventListener("click", openSerieApp);
-  el.btnHubApp.addEventListener("click", goToHub);
-  el.btnHubSerie.addEventListener("click", goToHub);
-  el.btnLogoutHub.addEventListener("click", doLogout);
-  el.btnLogoutSerie.addEventListener("click", doLogout);
 
   var TAB_TITLES = { lancar: "Registrar sobras", historico: "Histórico", painel: "Painel", usuarios: "Painel DEV", catalogo: "Catálogo" };
 
@@ -4336,16 +3488,16 @@
     loadCatalogFromStorage();
     loadEanMapFromStorage();
     tryAutoFetchCatalog();
-    loadSerieFromStorage();
 
     var s = loadSession();
     if(s && s.unit && s.unitLabel && s.displayName){
       session = s;
       el.userName.textContent = session.displayName;
       el.userNameSidebar.textContent = session.displayName;
-      el.hubUserName.textContent = session.displayName;
       applyRoleUI();
-      goToHub();
+      showScreen("app");
+      switchTab("lancar");
+      refreshAndRender();
       return;
     }
 
