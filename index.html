@@ -3003,6 +3003,7 @@
     }
 
     if(!selectedTransportadora){
+      scannerCooldownUntil = now + SCANNER_NOT_FOUND_COOLDOWN_MS;
       showToast("Selecione a transportadora antes de lançar.", "error");
       return;
     }
@@ -3109,10 +3110,10 @@
     });
     row.querySelector(".batch-remove").addEventListener("click", function(){ removeRow(row); });
     row.querySelector(".batch-scan-btn").addEventListener("click", function(){
-      if(!selectedTransportadora){
-        showToast("Selecione a transportadora antes de escanear.", "error");
-        return;
-      }
+      // Não trava a câmera por falta de transportadora — isso impedia até o
+      // desbloqueio do áudio do bipe (precisa rodar dentro do toque do
+      // usuário). A transportadora continua obrigatória pra COMMITAR o item
+      // (checada em onScanDecoded), só não bloqueia mais a câmera em si.
       ensureBeepContext();
       openScanner(row);
     });
