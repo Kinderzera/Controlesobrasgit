@@ -33,6 +33,7 @@ export default async function handler(req, res) {
         spId: it.ID,
         code: it.SKU || it.Title || "",
         desc: it.Descricao || "",
+        transportadora: it.Transportadora || "",
         qty:
           typeof it.Quantidade === "number"
             ? it.Quantidade
