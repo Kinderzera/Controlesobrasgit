@@ -503,8 +503,9 @@
   }
   .panel-table td{ padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap; color:var(--ink); }
   .panel-table td.pn-desc{ white-space:normal; min-width:180px; max-width:320px; color:var(--ink-muted); font-size:.78rem; }
-  .panel-table td.pn-qty, .panel-table td.pn-unit, .panel-table td.pn-total{
-    text-align:right; font-variant-numeric:tabular-nums;
+  .panel-table th.pn-num-head{ text-align:right; width:1%; }
+  .panel-table td.pn-qty, .panel-table td.pn-unit, .panel-table td.pn-total, .panel-table td.pn-count{
+    text-align:right; font-variant-numeric:tabular-nums; width:1%;
   }
   .panel-table td.pn-total{ font-weight:700; }
   .panel-table td.pn-code{ font-weight:700; }
@@ -903,9 +904,9 @@
               <thead>
                 <tr>
                   <th>Transportadora</th>
-                  <th>Produtos</th>
-                  <th>Qtd</th>
-                  <th>Valor total</th>
+                  <th class="pn-num-head">Produtos</th>
+                  <th class="pn-num-head">Qtd</th>
+                  <th class="pn-num-head">Valor total</th>
                 </tr>
               </thead>
               <tbody id="transportadora-table-body"></tbody>
@@ -2108,7 +2109,7 @@
       var tr = document.createElement("tr");
       tr.innerHTML =
         '<td class="pn-code"></td>' +
-        '<td class="pn-qty"></td>' +
+        '<td class="pn-count"></td>' +
         '<td class="pn-qty"></td>' +
         '<td class="pn-total"></td>';
       var tds = tr.querySelectorAll("td");
