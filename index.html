@@ -1141,6 +1141,7 @@
   var CATALOG_KEY = "sobras_catalog_v1";
   var EAN_OVERRIDES_KEY = "sobras_ean_overrides_v1";
   var PENDING_DELETES_KEY = "sobras_pending_deletes_v1";
+  var TRANSPORTADORA_KEY = "sobras_transportadora_v1";
 
   // A URL do Power Automate agora fica só no servidor (variável de ambiente
   // SHAREPOINT_FLOW_URL no Vercel) — o navegador chama /api/sobras.
@@ -3040,6 +3041,10 @@
 
   var selectedTransportadora = "";
 
+  // Fica selecionada entre lançamentos/scans seguidos (não pede de novo a
+  // cada item) e também sobrevive a um refresh de página, pra não obrigar o
+  // operador a reselecionar no meio de um turno — mas continua livre pra
+  // trocar manualmente a qualquer momento.
   function setSelectedTransportadora(value){
     selectedTransportadora = value;
     var opt = el.transportadoraSelectMenu.querySelector('[data-value="' + value + '"]');
@@ -3047,6 +3052,7 @@
     el.transportadoraSelectMenu.querySelectorAll(".custom-select-option").forEach(function(o){
       o.classList.toggle("selected", o.dataset.value === value);
     });
+    try{ localStorage.setItem(TRANSPORTADORA_KEY, value); }catch(e){}
     updateBatchButton();
   }
 
@@ -3064,6 +3070,14 @@
       el.transportadoraSelect.classList.remove("open");
     }
   });
+
+  (function restoreSelectedTransportadora(){
+    var saved = "";
+    try{ saved = localStorage.getItem(TRANSPORTADORA_KEY) || ""; }catch(e){}
+    if(saved && el.transportadoraSelectMenu.querySelector('[data-value="' + saved + '"]')){
+      setSelectedTransportadora(saved);
+    }
+  })();
 
   /* ---------------- batch entry grid ---------------- */
 
