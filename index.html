@@ -894,6 +894,27 @@
 
         <div class="card list-card panel-table-card">
           <div class="list-head">
+            <h2 style="margin:0;">Sobras por transportadora</h2>
+            <button type="button" class="btn-compact" id="btn-export-transportadora">Exportar CSV</button>
+          </div>
+          <div id="transportadora-empty" class="list-empty">Nenhuma sobra com transportadora informada ainda.</div>
+          <div id="transportadora-table-wrap" class="table-scroll" style="display:none;">
+            <table class="panel-table">
+              <thead>
+                <tr>
+                  <th>Transportadora</th>
+                  <th>Produtos</th>
+                  <th>Qtd</th>
+                  <th>Valor total</th>
+                </tr>
+              </thead>
+              <tbody id="transportadora-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card list-card panel-table-card">
+          <div class="list-head">
             <h2 style="margin:0;">Produtos em sobra</h2>
             <button type="button" class="btn-compact" id="btn-export-panel">Exportar CSV</button>
           </div>
@@ -1183,6 +1204,10 @@
     monthlyChart: document.getElementById("monthly-chart"),
     btnExportMonthly: document.getElementById("btn-export-monthly"),
     btnExportPanel: document.getElementById("btn-export-panel"),
+    transportadoraEmpty: document.getElementById("transportadora-empty"),
+    transportadoraTableWrap: document.getElementById("transportadora-table-wrap"),
+    transportadoraTableBody: document.getElementById("transportadora-table-body"),
+    btnExportTransportadora: document.getElementById("btn-export-transportadora"),
     btnTour: document.getElementById("btn-tour"),
     tourOverlay: document.getElementById("tour-overlay"),
     tourTooltip: document.getElementById("tour-tooltip"),
@@ -2049,6 +2074,78 @@
     return list;
   }
 
+  function aggregateByTransportadora(items){
+    var byT = {};
+    items.forEach(function(e){
+      var key = e.transportadora || "Não informado";
+      if(!byT[key]){ byT[key] = { transportadora: key, qty: 0, total: 0, skus: {} }; }
+      var row = byT[key];
+      row.qty += e.qty;
+      row.total += e.qty * (PRICE_DATA[e.code] || 0);
+      row.skus[e.code] = true;
+    });
+    var list = Object.keys(byT).map(function(k){
+      var row = byT[k];
+      return { transportadora: row.transportadora, qty: row.qty, total: row.total, skuCount: Object.keys(row.skus).length };
+    });
+    list.sort(function(a,b){ return b.total - a.total; });
+    return list;
+  }
+
+  var lastTransportadoraData = [];
+
+  function renderTransportadoraPanel(list){
+    lastTransportadoraData = list;
+    el.transportadoraTableBody.innerHTML = "";
+    if(list.length === 0){
+      el.transportadoraEmpty.style.display = "block";
+      el.transportadoraTableWrap.style.display = "none";
+      return;
+    }
+    el.transportadoraEmpty.style.display = "none";
+    el.transportadoraTableWrap.style.display = "block";
+    list.forEach(function(row){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td class="pn-code"></td>' +
+        '<td class="pn-qty"></td>' +
+        '<td class="pn-qty"></td>' +
+        '<td class="pn-total"></td>';
+      var tds = tr.querySelectorAll("td");
+      tds[0].textContent = row.transportadora;
+      tds[1].textContent = row.skuCount;
+      tds[2].textContent = row.qty;
+      tds[3].textContent = formatMoney(row.total);
+      el.transportadoraTableBody.appendChild(tr);
+    });
+  }
+
+  el.btnExportTransportadora.addEventListener("click", function(){
+    if(!lastTransportadoraData.length){
+      showToast("Sem dados de transportadora pra exportar ainda.", "error");
+      return;
+    }
+    var lines = ["Transportadora;Produtos;Quantidade;ValorTotal"];
+    lastTransportadoraData.forEach(function(row){
+      lines.push([csvEscape(row.transportadora), row.skuCount, row.qty, row.total.toFixed(2).replace(".", ",")].join(";"));
+    });
+    var csv = "﻿" + lines.join("\r\n");
+    try{
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "sobras_por_transportadora_" + (isMaster() ? "todas" : session.unit) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Arquivo exportado.");
+    }catch(e){
+      showToast("Exportação indisponível neste navegador.", "error");
+    }
+  });
+
   var lastPainelData = [];
 
   function painelSearchTerm(){
@@ -2110,11 +2207,13 @@
       setSyncStatus("syncing");
       fetchServerEntriesAllUnits().then(function(serverItems){
         renderPainel(aggregateForPainel(serverItems));
+        renderTransportadoraPanel(aggregateByTransportadora(serverItems));
         lastMonthlyData = aggregateMonthly(serverItems);
         renderMonthlyChart(lastMonthlyData);
         setSyncStatus("ok");
       }).catch(function(){
         renderPainel(aggregateForPainel([]));
+        renderTransportadoraPanel([]);
         renderMonthlyChart([]);
         setSyncStatus("error");
       });
@@ -2123,6 +2222,7 @@
 
     var local = loadEntries().filter(function(e){ return e.unit === session.unit; });
     renderPainel(aggregateForPainel(local));
+    renderTransportadoraPanel(aggregateByTransportadora(local));
     renderMonthlyChart(aggregateMonthly(local));
     setSyncStatus("syncing");
     retryPendingDeletes();
@@ -2146,6 +2246,7 @@
       saveEntries(others.concat(keptLocal));
 
       renderPainel(aggregateForPainel(merged));
+      renderTransportadoraPanel(aggregateByTransportadora(merged));
       lastMonthlyData = aggregateMonthly(merged);
       renderMonthlyChart(lastMonthlyData);
       setSyncStatus("ok");
