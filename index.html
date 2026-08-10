@@ -3025,14 +3025,18 @@
     refreshAndRender();
     playScanBeep();
     showToast("Lançado: " + key + " (1 unidade).");
-    // Volta pra tela de lançamento — pra escanear o próximo item, o
-    // operador precisa adicionar uma linha nova e tocar no scanner de novo
-    // (a linha que disparou esse bipe é removida, não fica pronta pra reusar).
+    // Volta pra tela de lançamento — a linha que disparou esse bipe é
+    // removida (não fica pronta pra reusar), mas sempre deixa uma linha nova
+    // pronta na hora, senão some o campo de escanear/digitar até o operador
+    // tocar em "Adicionar linha" manualmente — trava o fluxo de bipar rápido.
     closeScanner();
     if(triggerRow && triggerRow.parentNode){
       triggerRow.remove();
-      updateBatchButton();
     }
+    if(!el.batchList.querySelector(".batch-row")){
+      addRow(false);
+    }
+    updateBatchButton();
   }
 
   el.scannerClose.addEventListener("click", closeScanner);
