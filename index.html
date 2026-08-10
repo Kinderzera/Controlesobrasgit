@@ -565,6 +565,10 @@
     margin-top:4px; font-size:.74rem; color:var(--ink-muted);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
+  .entry-row .carrier{
+    margin-top:2px; font-size:.72rem; color:var(--accent);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
   .entry-row .del{
     width:28px; height:28px; border:none; background:none; color:var(--ink-muted);
     cursor:pointer; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; justify-self:end;
@@ -787,7 +791,25 @@
           <form id="batch-form" novalidate>
             <div class="batch-list" id="batch-list"></div>
 
-            <button type="button" class="btn-add-row" id="btn-add-row">
+            <label class="field-label" for="transportadora-select-btn">Transportadora</label>
+            <div class="custom-select" id="transportadora-select">
+              <button type="button" class="custom-select-btn" id="transportadora-select-btn">
+                <span id="transportadora-select-label">Selecione a transportadora</span>
+                <svg class="custom-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="custom-select-menu" id="transportadora-select-menu">
+                <button type="button" class="custom-select-option" data-value="G3SLOG">G3SLOG</button>
+                <button type="button" class="custom-select-option" data-value="NEVES">NEVES</button>
+                <button type="button" class="custom-select-option" data-value="CFLOG">CFLOG</button>
+                <button type="button" class="custom-select-option" data-value="PRIXX">PRIXX</button>
+                <button type="button" class="custom-select-option" data-value="JOIN">JOIN</button>
+                <button type="button" class="custom-select-option" data-value="POLONI">POLONI</button>
+                <button type="button" class="custom-select-option" data-value="TRANSLOVATO">TRANSLOVATO</button>
+                <button type="button" class="custom-select-option" data-value="AXON">AXON</button>
+              </div>
+            </div>
+
+            <button type="button" class="btn-add-row" id="btn-add-row" style="margin-top:14px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               Adicionar linha
             </button>
@@ -1131,6 +1153,10 @@
     batchList: document.getElementById("batch-list"),
     btnAddRow: document.getElementById("btn-add-row"),
     btnBatchSubmit: document.getElementById("btn-batch-submit"),
+    transportadoraSelect: document.getElementById("transportadora-select"),
+    transportadoraSelectBtn: document.getElementById("transportadora-select-btn"),
+    transportadoraSelectLabel: document.getElementById("transportadora-select-label"),
+    transportadoraSelectMenu: document.getElementById("transportadora-select-menu"),
 
     statCount: document.getElementById("stat-count"),
     statQty: document.getElementById("stat-qty"),
@@ -1334,6 +1360,7 @@
       acao: "criar",
       sku: entry.code,
       descricao: entry.desc || "",
+      transportadora: entry.transportadora || "",
       quantidade: entry.qty,
       unidade: entry.unitLabel,
       usuario: entry.user,
@@ -2308,12 +2335,15 @@
             '<path d="M10 11v6M14 11v6"/>' +
             '</svg></button>') +
         '</div>' +
-        '<p class="desc"></p>';
+        '<p class="desc"></p>' +
+        '<p class="carrier"></p>';
       row.querySelector(".code").textContent = entry.code;
       row.querySelector(".qty").textContent = entry.qty;
       row.querySelector(".when").textContent = formatWhen(entry.ts);
       var descEl = row.querySelector(".desc");
       if(entry.desc){ descEl.textContent = entry.desc; } else { descEl.style.display = "none"; }
+      var carrierEl = row.querySelector(".carrier");
+      if(entry.transportadora){ carrierEl.textContent = "Transportadora: " + entry.transportadora; } else { carrierEl.style.display = "none"; }
       el.entryList.appendChild(row);
     }
 
@@ -2344,11 +2374,11 @@
       return;
     }
     var showUnit = isMaster();
-    var header = ["Código", "Descrição", "Quantidade", "Data/Hora"];
+    var header = ["Código", "Descrição", "Transportadora", "Quantidade", "Data/Hora"];
     if(showUnit){ header.splice(1, 0, "Unidade"); }
     var lines = [header.join(";")];
     list.forEach(function(e){
-      var row = [csvEscape(e.code), csvEscape(e.desc), e.qty, formatWhen(e.ts)];
+      var row = [csvEscape(e.code), csvEscape(e.desc), csvEscape(e.transportadora || ""), e.qty, formatWhen(e.ts)];
       if(showUnit){ row.splice(1, 0, csvEscape(e.unitLabel || "")); }
       lines.push(row.join(";"));
     });
@@ -2868,6 +2898,11 @@
       return;
     }
 
+    if(!selectedTransportadora){
+      showToast("Selecione a transportadora antes de lançar.", "error");
+      return;
+    }
+
     var code = resolveScannedCode(decodedText);
     var key = code.toUpperCase();
 
@@ -2898,6 +2933,35 @@
   el.scannerClose.addEventListener("click", closeScanner);
   el.scannerTorch.addEventListener("click", toggleTorch);
 
+  /* ---------------- transportadora (aplica a todos os itens lançados no lote) ---------------- */
+
+  var selectedTransportadora = "";
+
+  function setSelectedTransportadora(value){
+    selectedTransportadora = value;
+    var opt = el.transportadoraSelectMenu.querySelector('[data-value="' + value + '"]');
+    el.transportadoraSelectLabel.textContent = opt ? opt.textContent : "Selecione a transportadora";
+    el.transportadoraSelectMenu.querySelectorAll(".custom-select-option").forEach(function(o){
+      o.classList.toggle("selected", o.dataset.value === value);
+    });
+    updateBatchButton();
+  }
+
+  el.transportadoraSelectBtn.addEventListener("click", function(){
+    el.transportadoraSelect.classList.toggle("open");
+  });
+  el.transportadoraSelectMenu.querySelectorAll(".custom-select-option").forEach(function(o){
+    o.addEventListener("click", function(){
+      setSelectedTransportadora(o.dataset.value);
+      el.transportadoraSelect.classList.remove("open");
+    });
+  });
+  document.addEventListener("click", function(ev){
+    if(!el.transportadoraSelect.contains(ev.target)){
+      el.transportadoraSelect.classList.remove("open");
+    }
+  });
+
   /* ---------------- batch entry grid ---------------- */
 
   function createRow(){
@@ -2927,7 +2991,14 @@
       if(ev.key === "Enter"){ ev.preventDefault(); focusNextOrNewRow(row); }
     });
     row.querySelector(".batch-remove").addEventListener("click", function(){ removeRow(row); });
-    row.querySelector(".batch-scan-btn").addEventListener("click", function(){ ensureBeepContext(); openScanner(row); });
+    row.querySelector(".batch-scan-btn").addEventListener("click", function(){
+      if(!selectedTransportadora){
+        showToast("Selecione a transportadora antes de escanear.", "error");
+        return;
+      }
+      ensureBeepContext();
+      openScanner(row);
+    });
 
     return row;
   }
@@ -3042,7 +3113,7 @@
     var rows = el.batchList.querySelectorAll(".batch-row");
     var validCount = 0;
     rows.forEach(function(row){ if(row.dataset.valid === "1"){ validCount++; } });
-    el.btnBatchSubmit.disabled = validCount === 0;
+    el.btnBatchSubmit.disabled = validCount === 0 || !selectedTransportadora;
     el.btnBatchSubmit.innerHTML = (validCount > 0 ? ("LANÇAR " + validCount + (validCount === 1 ? " ITEM" : " ITENS")) : "LANÇAR ITENS") +
       ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   }
@@ -3062,6 +3133,7 @@
         user: session.displayName,
         code: item.code,
         desc: item.desc,
+        transportadora: selectedTransportadora,
         qty: 1,
         ts: now
       };
@@ -3080,6 +3152,10 @@
     ev.preventDefault();
     if(catalog.count === 0){
       showToast("Importe a lista de itens antes de lançar.", "error");
+      return;
+    }
+    if(!selectedTransportadora){
+      showToast("Selecione a transportadora antes de lançar.", "error");
       return;
     }
 
